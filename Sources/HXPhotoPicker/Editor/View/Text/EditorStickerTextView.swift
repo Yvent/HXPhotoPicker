@@ -14,6 +14,15 @@ class EditorStickerTextView: UIView {
     private var flowLayout: UICollectionViewFlowLayout!
     var collectionView: UICollectionView!
     
+    // Tab switcher
+    private var segmentedControl: UISegmentedControl!
+    
+    // Font selection
+    private var fontListContainerView: UIView!
+    private var fontCollectionView: UICollectionView!
+    private var fontFlowLayout: UICollectionViewFlowLayout!
+    private var fontFamilies: [String] = []
+    
     // Font size controls
     private var fontSizeContainerView: UIView!
     private var fontSizeLabel: UILabel!
@@ -81,6 +90,8 @@ class EditorStickerTextView: UIView {
     var isItalic: Bool = false
     var hasUnderline: Bool = false
     var hasStrikethrough: Bool = false
+    var currentFontName: String?
+    var isShowingStyleTab: Bool = true
     
     init(
         config: EditorConfiguration.Text,
@@ -110,6 +121,37 @@ class EditorStickerTextView: UIView {
     }
     
     private func initViews() {
+        // Load font families
+        fontFamilies = UIFont.familyNames.sorted()
+        
+        // Segmented control for tab switching
+        segmentedControl = UISegmentedControl(items: ["样式", "字体"])
+        segmentedControl.selectedSegmentIndex = 0
+        segmentedControl.addTarget(self, action: #selector(didSegmentedControlChanged(_:)), for: .valueChanged)
+        addSubview(segmentedControl)
+        
+        // Font list container (horizontal scrolling)
+        fontListContainerView = UIView()
+        fontListContainerView.backgroundColor = .clear
+        fontListContainerView.isHidden = true
+        addSubview(fontListContainerView)
+        
+        fontFlowLayout = UICollectionViewFlowLayout()
+        fontFlowLayout.scrollDirection = .horizontal
+        fontFlowLayout.minimumInteritemSpacing = 10
+        fontFlowLayout.itemSize = CGSize(width: 100, height: 60)
+        fontCollectionView = UICollectionView(frame: .zero, collectionViewLayout: fontFlowLayout)
+        fontCollectionView.backgroundColor = .clear
+        fontCollectionView.delegate = self
+        fontCollectionView.dataSource = self
+        fontCollectionView.showsHorizontalScrollIndicator = false
+        fontCollectionView.showsVerticalScrollIndicator = false
+        if #available(iOS 11.0, *) {
+            fontCollectionView.contentInsetAdjustmentBehavior = .never
+        }
+        fontCollectionView.register(FontCollectionViewCell.self, forCellWithReuseIdentifier: "FontCollectionViewCellID")
+        fontListContainerView.addSubview(fontCollectionView)
+        
         textView = UITextView()
         textView.backgroundColor = .clear
         textView.delegate = self
@@ -278,11 +320,18 @@ class EditorStickerTextView: UIView {
             hasUnderline = text.hasUnderline
             hasStrikethrough = text.hasStrikethrough
             currentAlpha = text.textAlpha
+            currentFontName = text.fontName
             
             // Update UI controls
             fontSizeLabel.text = "\(Int(currentFontSize))"
             opacitySlider.value = Float(currentAlpha)
             updateStyleButtonStates()
+            
+            // Select font in collection if custom font
+            if let fontName = currentFontName, let index = fontFamilies.firstIndex(of: fontName) {
+                let indexPath = IndexPath(item: index, section: 0)
+                fontCollectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredHorizontally)
+            }
         }
         setupTextAttributes()
     }
@@ -323,17 +372,40 @@ class EditorStickerTextView: UIView {
     }
     
     private func getCurrentFont() -> UIFont {
-        if isBold && isItalic {
+        // Get base font
+        let baseFont: UIFont
+        if let fontName = currentFontName, let customFont = UIFont(name: fontName, size: currentFontSize) {
+            baseFont = customFont
+        } else if isBold && isItalic {
             if let descriptor = UIFont.systemFont(ofSize: currentFontSize).fontDescriptor
                 .withSymbolicTraits([.traitBold, .traitItalic]) {
                 return UIFont(descriptor: descriptor, size: currentFontSize)
             }
+            return .boldSystemFont(ofSize: currentFontSize)
         } else if isBold {
             return .boldSystemFont(ofSize: currentFontSize)
         } else if isItalic {
             return .italicSystemFont(ofSize: currentFontSize)
+        } else {
+            return .systemFont(ofSize: currentFontSize)
         }
-        return .systemFont(ofSize: currentFontSize)
+        
+        // Try to apply bold/italic traits to custom font
+        if isBold || isItalic {
+            var traits: UIFontDescriptor.SymbolicTraits = []
+            if isBold {
+                traits.insert(.traitBold)
+            }
+            if isItalic {
+                traits.insert(.traitItalic)
+            }
+            
+            if let descriptor = baseFont.fontDescriptor.withSymbolicTraits(traits) {
+                return UIFont(descriptor: descriptor, size: currentFontSize)
+            }
+        }
+        
+        return baseFont
     }
     
     private func updateFont() {
@@ -485,6 +557,20 @@ class EditorStickerTextView: UIView {
         hasStrikethrough = !hasStrikethrough
         updateStyleButtonStates()
         updateTextAttributes()
+    }
+    
+    @objc
+    private func didSegmentedControlChanged(_ control: UISegmentedControl) {
+        isShowingStyleTab = control.selectedSegmentIndex == 0
+        
+        UIView.animate(withDuration: 0.25) {
+            self.fontListContainerView.isHidden = self.isShowingStyleTab
+            self.textButton.isHidden = !self.isShowingStyleTab
+            self.collectionView.isHidden = !self.isShowingStyleTab
+            self.fontSizeContainerView.isHidden = !self.isShowingStyleTab
+            self.opacityContainerView.isHidden = !self.isShowingStyleTab
+            self.styleContainerView.isHidden = !self.isShowingStyleTab
+        }
     }
     
     @objc
@@ -672,9 +758,10 @@ class EditorStickerTextView: UIView {
         )
         
         // Color picker (above font size)
+        let colorPickerY = fontSizeY - 50
         textButton.frame = CGRect(
             x: UIDevice.leftMargin,
-            y: fontSizeY - 50,
+            y: colorPickerY,
             width: 50,
             height: 50
         )
@@ -685,8 +772,33 @@ class EditorStickerTextView: UIView {
             height: 50
         )
         
+        // Segmented control (above color picker in edit area)
+        let segmentHeight: CGFloat = 40
+        let segmentY = colorPickerY - segmentHeight - 10
+        segmentedControl.frame = CGRect(
+            x: UIDevice.leftMargin + 10,
+            y: segmentY,
+            width: width - UIDevice.leftMargin - UIDevice.rightMargin - 20,
+            height: segmentHeight
+        )
+        
+        // Font list container (replaces all style controls)
+        fontListContainerView.frame = CGRect(
+            x: 0,
+            y: segmentedControl.frame.maxY + 10,
+            width: width,
+            height: bottomY - segmentedControl.frame.maxY - 10
+        )
+        fontFlowLayout.sectionInset = UIEdgeInsets(
+            top: 0,
+            left: UIDevice.leftMargin + 10,
+            bottom: 0,
+            right: UIDevice.rightMargin + 10
+        )
+        fontCollectionView.frame = fontListContainerView.bounds
+        
         // Text view
-        textView.frame = CGRect(x: 10, y: 0, width: width - 20, height: textButton.y)
+        textView.frame = CGRect(x: 10, y: 0, width: width - 20, height: segmentY - 10)
         textView.textContainerInset = UIEdgeInsets(
             top: 15,
             left: 15 + UIDevice.leftMargin,
@@ -802,4 +914,167 @@ struct PhotoEditorBrushCustomColor {
     var isFirst: Bool = true
     var isSelected: Bool = false
     var color: UIColor
+}
+
+// MARK: - UICollectionViewDelegate & DataSource for Font Selection
+extension EditorStickerTextView {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        if collectionView == fontCollectionView {
+            return fontFamilies.count
+        }
+        return config.colors.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if collectionView == fontCollectionView {
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "FontCollectionViewCellID",
+                for: indexPath
+            ) as! FontCollectionViewCell
+            let fontFamily = fontFamilies[indexPath.item]
+            cell.configure(with: fontFamily, fontSize: currentFontSize)
+            return cell
+        } else {
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "EditorStickerTextViewCellID",
+                for: indexPath
+            ) as! EditorStickerTextViewCell
+            let colorHex = config.colors[indexPath.item]
+            if isShowCustomColor, indexPath.item == config.colors.count - 1 {
+                cell.customColor = customColor
+            }else {
+                cell.colorHex = colorHex
+            }
+            return cell
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if collectionView == fontCollectionView {
+            let fontFamily = fontFamilies[indexPath.item]
+            currentFontName = fontFamily
+            updateTextAttributes()
+            collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
+        } else {
+            // Original color selection logic
+            let colorHex = config.colors[indexPath.item]
+            let color: UIColor
+            if isShowCustomColor, indexPath.item == config.colors.count - 1 {
+                color = customColor.color
+                if #available(iOS 14.0, *) {
+                    if !customColor.isFirst && !customColor.isSelected {
+                        customColor.isSelected = true
+                    }else {
+                        let vc = UIColorPickerViewController()
+                        vc.delegate = self
+                        vc.selectedColor = customColor.color
+                        viewController?.present(vc, animated: true, completion: nil)
+                        customColor.isFirst = false
+                        customColor.isSelected = true
+                    }
+                }
+            }else {
+                color = colorHex.color
+            }
+            if currentSelectedIndex == indexPath.item {
+                return
+            }
+            if currentSelectedIndex >= 0 {
+                collectionView.deselectItem(at: IndexPath(item: currentSelectedIndex, section: 0), animated: true)
+            }
+            currentSelectedColor = color
+            currentSelectedIndex = indexPath.item
+            if showBackgroudColor {
+                useBgColor = color
+                if color.isWhite {
+                    changeTextColor(color: .black)
+                }else {
+                    changeTextColor(color: .white)
+                }
+            }else {
+                changeTextColor(color: color)
+            }
+        }
+    }
+}
+
+// MARK: - Font Collection View Cell
+class FontCollectionViewCell: UICollectionViewCell {
+    private var containerView: UIView!
+    private var fontLabel: UILabel!
+    private var nameLabel: UILabel!
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupViews()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupViews() {
+        containerView = UIView()
+        containerView.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        containerView.layer.cornerRadius = 4
+        containerView.layer.masksToBounds = true
+        contentView.addSubview(containerView)
+        
+        fontLabel = UILabel()
+        fontLabel.textColor = .white
+        fontLabel.textAlignment = .center
+        fontLabel.numberOfLines = 1
+        fontLabel.adjustsFontSizeToFitWidth = true
+        fontLabel.minimumScaleFactor = 0.5
+        containerView.addSubview(fontLabel)
+        
+        nameLabel = UILabel()
+        nameLabel.textColor = UIColor.white.withAlphaComponent(0.7)
+        nameLabel.font = .systemFont(ofSize: 10)
+        nameLabel.textAlignment = .center
+        nameLabel.numberOfLines = 1
+        containerView.addSubview(nameLabel)
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        containerView.frame = bounds
+        
+        fontLabel.frame = CGRect(
+            x: 5,
+            y: 8,
+            width: width - 10,
+            height: 30
+        )
+        
+        nameLabel.frame = CGRect(
+            x: 5,
+            y: fontLabel.frame.maxY + 2,
+            width: width - 10,
+            height: 16
+        )
+    }
+    
+    override var isSelected: Bool {
+        didSet {
+            containerView.backgroundColor = isSelected ? 
+                UIColor.white.withAlphaComponent(0.4) : 
+                UIColor.white.withAlphaComponent(0.15)
+            containerView.layer.borderWidth = isSelected ? 2 : 0
+            containerView.layer.borderColor = UIColor.white.cgColor
+        }
+    }
+    
+    func configure(with fontFamily: String, fontSize: CGFloat) {
+        fontLabel.text = "美图"
+        nameLabel.text = fontFamily
+        
+        // Try to use the font family for display
+        if let font = UIFont(name: fontFamily, size: 20) {
+            fontLabel.font = font
+        } else {
+            // Fallback to system font if the font family doesn't work
+            fontLabel.font = .systemFont(ofSize: 20)
+        }
+    }
 }

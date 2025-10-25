@@ -177,6 +177,7 @@ public struct EditorStickerText {
     public let hasUnderline: Bool
     public let hasStrikethrough: Bool
     public let textAlpha: CGFloat
+    public let fontName: String?
     
     public init(
         image: UIImage,
@@ -188,7 +189,8 @@ public struct EditorStickerText {
         isItalic: Bool = false,
         hasUnderline: Bool = false,
         hasStrikethrough: Bool = false,
-        textAlpha: CGFloat = 1.0
+        textAlpha: CGFloat = 1.0,
+        fontName: String? = nil
     ) {
         self.image = image
         self.text = text
@@ -200,6 +202,7 @@ public struct EditorStickerText {
         self.hasUnderline = hasUnderline
         self.hasStrikethrough = hasStrikethrough
         self.textAlpha = textAlpha
+        self.fontName = fontName
     }
 }
 
@@ -473,6 +476,7 @@ extension EditorStickerText: Codable {
         case hasUnderline
         case hasStrikethrough
         case textAlpha
+        case fontName
     }
     
     public init(from decoder: Decoder) throws {
@@ -497,6 +501,7 @@ extension EditorStickerText: Codable {
         hasUnderline = try container.decodeIfPresent(Bool.self, forKey: .hasUnderline) ?? false
         hasStrikethrough = try container.decodeIfPresent(Bool.self, forKey: .hasStrikethrough) ?? false
         textAlpha = try container.decodeIfPresent(CGFloat.self, forKey: .textAlpha) ?? 1.0
+        fontName = try container.decodeIfPresent(String.self, forKey: .fontName)
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -519,6 +524,7 @@ extension EditorStickerText: Codable {
         try container.encode(hasUnderline, forKey: .hasUnderline)
         try container.encode(hasStrikethrough, forKey: .hasStrikethrough)
         try container.encode(textAlpha, forKey: .textAlpha)
+        try container.encodeIfPresent(fontName, forKey: .fontName)
     }
 }
 

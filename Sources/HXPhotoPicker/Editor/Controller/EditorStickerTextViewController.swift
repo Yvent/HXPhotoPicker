@@ -117,7 +117,8 @@ final class EditorStickerTextViewController: HXBaseViewController {
                 isItalic: textView.isItalic,
                 hasUnderline: textView.hasUnderline,
                 hasStrikethrough: textView.hasStrikethrough,
-                textAlpha: textView.currentAlpha
+                textAlpha: textView.currentAlpha,
+                fontName: textView.currentFontName
             )
             if self.stickerText != nil {
                 delegate?.stickerTextViewController(self, didFinishUpdate: stickerText)
