@@ -20,8 +20,9 @@ extension EditorStickerTextView {
     }
     
     func changeTextColor(color: UIColor) {
-        textView.textColor = color
-        typingAttributes[NSAttributedString.Key.foregroundColor] = color
+        let colorWithAlpha = color.withAlphaComponent(currentAlpha)
+        textView.textColor = colorWithAlpha
+        typingAttributes[NSAttributedString.Key.foregroundColor] = colorWithAlpha
         textView.typingAttributes = typingAttributes
     }
     

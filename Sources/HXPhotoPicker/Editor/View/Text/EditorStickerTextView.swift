@@ -14,6 +14,29 @@ class EditorStickerTextView: UIView {
     private var flowLayout: UICollectionViewFlowLayout!
     var collectionView: UICollectionView!
     
+    // Font size controls
+    private var fontSizeContainerView: UIView!
+    private var fontSizeLabel: UILabel!
+    private var fontSizeMinusButton: UIButton!
+    private var fontSizePlusButton: UIButton!
+    private var fontSizeTitleLabel: UILabel!
+    
+    // Opacity controls
+    private var opacityContainerView: UIView!
+    private var opacitySlider: UISlider!
+    private var opacityTitleLabel: UILabel!
+    
+    // Style buttons
+    private var styleContainerView: UIView!
+    private var boldButton: UIButton!
+    private var boldLabel: UILabel!
+    private var italicButton: UIButton!
+    private var italicLabel: UILabel!
+    private var underlineButton: UIButton!
+    private var underlineLabel: UILabel!
+    private var strikethroughButton: UIButton!
+    private var strikethroughLabel: UILabel!
+    
     var text: String {
         textView.text
     }
@@ -51,17 +74,31 @@ class EditorStickerTextView: UIView {
     var keyboardFrame: CGRect = .zero
     var maxIndex: Int = 0
     
+    // New style properties
+    var currentFontSize: CGFloat
+    var currentAlpha: CGFloat = 1.0
+    var isBold: Bool = false
+    var isItalic: Bool = false
+    var hasUnderline: Bool = false
+    var hasStrikethrough: Bool = false
+    
     init(
         config: EditorConfiguration.Text,
         stickerText: EditorStickerText?
     ) {
         self.config = config
-        if #available(iOS 14.0, *), config.colors.count > 1, let color = config.colors.last?.color {
-            self.customColor = .init(color: color)
-        }else {
-            self.customColor = .init(color: .clear)
-        }
+        self.currentFontSize = config.defaultFontSize
         self.stickerText = stickerText
+        
+        // Initialize customColor
+        let initialColor: UIColor
+        if #available(iOS 14.0, *), config.colors.count > 1, let color = config.colors.last?.color {
+            initialColor = color
+        } else {
+            initialColor = .clear
+        }
+        self.customColor = .init(color: initialColor)
+        
         super.init(frame: .zero)
         initViews()
         setupTextConfig()
@@ -110,6 +147,124 @@ class EditorStickerTextView: UIView {
             forCellWithReuseIdentifier: "EditorStickerTextViewCellID"
         )
         addSubview(collectionView)
+        
+        // Font size controls
+        fontSizeContainerView = UIView()
+        fontSizeContainerView.backgroundColor = .clear
+        addSubview(fontSizeContainerView)
+        
+        fontSizeTitleLabel = UILabel()
+        fontSizeTitleLabel.text = "字号"
+        fontSizeTitleLabel.textColor = .white
+        fontSizeTitleLabel.font = .systemFont(ofSize: 14)
+        fontSizeTitleLabel.textAlignment = .center
+        fontSizeContainerView.addSubview(fontSizeTitleLabel)
+        
+        fontSizeMinusButton = UIButton(type: .custom)
+        fontSizeMinusButton.setTitle("−", for: .normal)
+        fontSizeMinusButton.setTitleColor(.white, for: .normal)
+        fontSizeMinusButton.titleLabel?.font = .systemFont(ofSize: 24)
+        fontSizeMinusButton.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        fontSizeMinusButton.layer.cornerRadius = 4
+        fontSizeMinusButton.addTarget(self, action: #selector(didMinusFontSizeClick), for: .touchUpInside)
+        fontSizeContainerView.addSubview(fontSizeMinusButton)
+        
+        fontSizeLabel = UILabel()
+        fontSizeLabel.text = "\(Int(currentFontSize))"
+        fontSizeLabel.textColor = .white
+        fontSizeLabel.font = .systemFont(ofSize: 16)
+        fontSizeLabel.textAlignment = .center
+        fontSizeLabel.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        fontSizeLabel.layer.cornerRadius = 4
+        fontSizeLabel.layer.masksToBounds = true
+        fontSizeContainerView.addSubview(fontSizeLabel)
+        
+        fontSizePlusButton = UIButton(type: .custom)
+        fontSizePlusButton.setTitle("+", for: .normal)
+        fontSizePlusButton.setTitleColor(.white, for: .normal)
+        fontSizePlusButton.titleLabel?.font = .systemFont(ofSize: 20)
+        fontSizePlusButton.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        fontSizePlusButton.layer.cornerRadius = 4
+        fontSizePlusButton.addTarget(self, action: #selector(didPlusFontSizeClick), for: .touchUpInside)
+        fontSizeContainerView.addSubview(fontSizePlusButton)
+        
+        // Opacity controls
+        opacityContainerView = UIView()
+        opacityContainerView.backgroundColor = .clear
+        addSubview(opacityContainerView)
+        
+        opacityTitleLabel = UILabel()
+        opacityTitleLabel.text = "透明"
+        opacityTitleLabel.textColor = .white
+        opacityTitleLabel.font = .systemFont(ofSize: 14)
+        opacityTitleLabel.textAlignment = .center
+        opacityContainerView.addSubview(opacityTitleLabel)
+        
+        opacitySlider = UISlider()
+        opacitySlider.minimumValue = 0
+        opacitySlider.maximumValue = 1
+        opacitySlider.value = Float(currentAlpha)
+        opacitySlider.minimumTrackTintColor = .white
+        opacitySlider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.3)
+        opacitySlider.addTarget(self, action: #selector(didOpacitySliderChanged(_:)), for: .valueChanged)
+        opacityContainerView.addSubview(opacitySlider)
+        
+        // Style buttons
+        styleContainerView = UIView()
+        styleContainerView.backgroundColor = .clear
+        addSubview(styleContainerView)
+        
+        boldButton = createStyleButton(title: "B", action: #selector(didBoldButtonClick))
+        boldButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
+        styleContainerView.addSubview(boldButton)
+        boldLabel = createStyleLabel(text: "粗体")
+        styleContainerView.addSubview(boldLabel)
+        
+        italicButton = createStyleButton(title: "I", action: #selector(didItalicButtonClick))
+        italicButton.titleLabel?.font = .italicSystemFont(ofSize: 18)
+        styleContainerView.addSubview(italicButton)
+        italicLabel = createStyleLabel(text: "斜体")
+        styleContainerView.addSubview(italicLabel)
+        
+        underlineButton = createStyleButton(title: "U", action: #selector(didUnderlineButtonClick))
+        let underlineAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 18),
+            .underlineStyle: NSUnderlineStyle.single.rawValue
+        ]
+        underlineButton.setAttributedTitle(NSAttributedString(string: "U", attributes: underlineAttributes), for: .normal)
+        styleContainerView.addSubview(underlineButton)
+        underlineLabel = createStyleLabel(text: "下划线")
+        styleContainerView.addSubview(underlineLabel)
+        
+        strikethroughButton = createStyleButton(title: "S", action: #selector(didStrikethroughButtonClick))
+        let strikethroughAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 18),
+            .strikethroughStyle: NSUnderlineStyle.single.rawValue
+        ]
+        strikethroughButton.setAttributedTitle(NSAttributedString(string: "S", attributes: strikethroughAttributes), for: .normal)
+        styleContainerView.addSubview(strikethroughButton)
+        strikethroughLabel = createStyleLabel(text: "删除线")
+        styleContainerView.addSubview(strikethroughLabel)
+    }
+    
+    private func createStyleButton(title: String, action: Selector) -> UIButton {
+        let button = UIButton(type: .custom)
+        button.setTitle(title, for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 18)
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        button.layer.cornerRadius = 4
+        button.addTarget(self, action: action, for: .touchUpInside)
+        return button
+    }
+    
+    private func createStyleLabel(text: String) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 11)
+        label.textAlignment = .center
+        return label
     }
     
     private func setupStickerText() {
@@ -117,22 +272,116 @@ class EditorStickerTextView: UIView {
             showBackgroudColor = text.showBackgroud
             textView.text = text.text
             textButton.isSelected = text.showBackgroud
+            currentFontSize = text.fontSize
+            isBold = text.isBold
+            isItalic = text.isItalic
+            hasUnderline = text.hasUnderline
+            hasStrikethrough = text.hasStrikethrough
+            currentAlpha = text.textAlpha
+            
+            // Update UI controls
+            fontSizeLabel.text = "\(Int(currentFontSize))"
+            opacitySlider.value = Float(currentAlpha)
+            updateStyleButtonStates()
         }
         setupTextAttributes()
     }
     
+    private func updateStyleButtonStates() {
+        boldButton.backgroundColor = isBold ? UIColor.white.withAlphaComponent(0.5) : UIColor.white.withAlphaComponent(0.2)
+        italicButton.backgroundColor = isItalic ? UIColor.white.withAlphaComponent(0.5) : UIColor.white.withAlphaComponent(0.2)
+        underlineButton.backgroundColor = hasUnderline ? UIColor.white.withAlphaComponent(0.5) : UIColor.white.withAlphaComponent(0.2)
+        strikethroughButton.backgroundColor = hasStrikethrough ? UIColor.white.withAlphaComponent(0.5) : UIColor.white.withAlphaComponent(0.2)
+    }
+    
     private func setupTextConfig() {
         textView.tintColor = config.tintColor
-        textView.font = config.font
+        updateFont()
     }
     
     private func setupTextAttributes() {
+        let font = getCurrentFont()
+        let color = currentSelectedColor.withAlphaComponent(currentAlpha)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 8
-        let attributes = [NSAttributedString.Key.font: config.font,
-                          NSAttributedString.Key.paragraphStyle: paragraphStyle]
+        
+        var attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        if hasUnderline {
+            attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
+        }
+        if hasStrikethrough {
+            attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+        }
+        
         typingAttributes = attributes
         textView.attributedText = NSAttributedString(string: stickerText?.text ?? "", attributes: attributes)
+    }
+    
+    private func getCurrentFont() -> UIFont {
+        if isBold && isItalic {
+            if let descriptor = UIFont.systemFont(ofSize: currentFontSize).fontDescriptor
+                .withSymbolicTraits([.traitBold, .traitItalic]) {
+                return UIFont(descriptor: descriptor, size: currentFontSize)
+            }
+        } else if isBold {
+            return .boldSystemFont(ofSize: currentFontSize)
+        } else if isItalic {
+            return .italicSystemFont(ofSize: currentFontSize)
+        }
+        return .systemFont(ofSize: currentFontSize)
+    }
+    
+    private func updateFont() {
+        let font = getCurrentFont()
+        textView.font = font
+        typingAttributes[.font] = font
+        textView.typingAttributes = typingAttributes
+    }
+    
+    private func updateTextAttributes() {
+        let font = getCurrentFont()
+        let color = currentSelectedColor.withAlphaComponent(currentAlpha)
+        
+        // Preserve paragraph style
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineSpacing = 8
+        
+        typingAttributes[.font] = font
+        typingAttributes[.foregroundColor] = color
+        typingAttributes[.paragraphStyle] = paragraphStyle
+        
+        if hasUnderline {
+            typingAttributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
+        } else {
+            typingAttributes.removeValue(forKey: .underlineStyle)
+        }
+        
+        if hasStrikethrough {
+            typingAttributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+        } else {
+            typingAttributes.removeValue(forKey: .strikethroughStyle)
+        }
+        
+        textView.font = font
+        textView.textColor = color
+        textView.typingAttributes = typingAttributes
+        
+        // Apply to existing text
+        if !textView.text.isEmpty {
+            let currentText = textView.text ?? ""
+            let attributedString = NSMutableAttributedString(string: currentText, attributes: typingAttributes)
+            textView.attributedText = attributedString
+        }
+        
+        // Redraw background if active
+        if showBackgroudColor {
+            drawTextBackgroudColor()
+        }
     }
     
     private func setupTextColors() {
@@ -184,6 +433,58 @@ class EditorStickerTextView: UIView {
         if textButton.isSelected {
             drawTextBackgroudColor()
         }
+    }
+    
+    @objc
+    private func didMinusFontSizeClick() {
+        if currentFontSize > config.minFontSize {
+            currentFontSize -= 1
+            fontSizeLabel.text = "\(Int(currentFontSize))"
+            updateTextAttributes()
+        }
+    }
+    
+    @objc
+    private func didPlusFontSizeClick() {
+        if currentFontSize < config.maxFontSize {
+            currentFontSize += 1
+            fontSizeLabel.text = "\(Int(currentFontSize))"
+            updateTextAttributes()
+        }
+    }
+    
+    @objc
+    private func didOpacitySliderChanged(_ slider: UISlider) {
+        currentAlpha = CGFloat(slider.value)
+        updateTextAttributes()
+    }
+    
+    @objc
+    private func didBoldButtonClick() {
+        isBold = !isBold
+        updateStyleButtonStates()
+        updateTextAttributes()
+    }
+    
+    @objc
+    private func didItalicButtonClick() {
+        isItalic = !isItalic
+        updateStyleButtonStates()
+        updateTextAttributes()
+    }
+    
+    @objc
+    private func didUnderlineButtonClick() {
+        hasUnderline = !hasUnderline
+        updateStyleButtonStates()
+        updateTextAttributes()
+    }
+    
+    @objc
+    private func didStrikethroughButtonClick() {
+        hasStrikethrough = !hasStrikethrough
+        updateStyleButtonStates()
+        updateTextAttributes()
     }
     
     @objc
@@ -245,53 +546,146 @@ class EditorStickerTextView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         flowLayout.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 12 + UIDevice.rightMargin)
-        textButton.frame = CGRect(
-            x: UIDevice.leftMargin,
-            y: height,
-            width: 50,
-            height: 50
-        )
+        
+        let controlsHeight: CGFloat = 220 // Total height for all controls (50 + 50 + 50 + 70)
+        
+        // Calculate bottom position
+        var bottomY: CGFloat
         if keyboardFrame.isEmpty {
             if UIDevice.isPad {
                 if config.modalPresentationStyle == .fullScreen {
-                    textButton.y = height - (UIDevice.bottomMargin + 50)
+                    bottomY = height - UIDevice.bottomMargin
                 }else {
-                    textButton.y = height - 50
+                    bottomY = height
                 }
             }else {
-                textButton.y = height - (UIDevice.bottomMargin + 50)
+                bottomY = height - UIDevice.bottomMargin
             }
         }else {
-            if UIDevice.isPad {
-                let firstTextButtonY: CGFloat
-                if config.modalPresentationStyle == .fullScreen {
-                    firstTextButtonY = height - UIDevice.bottomMargin - 50
-                }else {
-                    firstTextButtonY = height - 50
-                }
-                let buttonRect = convert(
-                    .init(x: 0, y: firstTextButtonY, width: 50, height: 50),
-                    to: UIApplication.hx_keyWindow
-                )
-                if buttonRect.maxY > keyboardFrame.minY {
-                    textButton.y = height - (buttonRect.maxY - keyboardFrame.minY + 50)
-                }else {
-                    if config.modalPresentationStyle == .fullScreen {
-                        textButton.y = height - (UIDevice.bottomMargin + 50)
-                    }else {
-                        textButton.y = height - 50
-                    }
-                }
-            }else {
-                textButton.y = height - (50 + keyboardFrame.height)
-            }
+            bottomY = height - keyboardFrame.height
         }
+        
+        // Style buttons (bottom-most, above keyboard)
+        let styleButtonY = bottomY - 70
+        styleContainerView.frame = CGRect(x: 0, y: styleButtonY, width: width, height: 70)
+        let buttonWidth: CGFloat = 50
+        let buttonSpacing = (width - UIDevice.leftMargin - UIDevice.rightMargin - buttonWidth * 4) / 5
+        let buttonY: CGFloat = 5
+        let labelY: CGFloat = buttonY + buttonWidth + 2
+        
+        boldButton.frame = CGRect(
+            x: UIDevice.leftMargin + buttonSpacing,
+            y: buttonY,
+            width: buttonWidth,
+            height: buttonWidth
+        )
+        boldLabel.frame = CGRect(
+            x: boldButton.x,
+            y: labelY,
+            width: buttonWidth,
+            height: 12
+        )
+        
+        italicButton.frame = CGRect(
+            x: boldButton.frame.maxX + buttonSpacing,
+            y: buttonY,
+            width: buttonWidth,
+            height: buttonWidth
+        )
+        italicLabel.frame = CGRect(
+            x: italicButton.x,
+            y: labelY,
+            width: buttonWidth,
+            height: 12
+        )
+        
+        underlineButton.frame = CGRect(
+            x: italicButton.frame.maxX + buttonSpacing,
+            y: buttonY,
+            width: buttonWidth,
+            height: buttonWidth
+        )
+        underlineLabel.frame = CGRect(
+            x: underlineButton.x,
+            y: labelY,
+            width: buttonWidth,
+            height: 12
+        )
+        
+        strikethroughButton.frame = CGRect(
+            x: underlineButton.frame.maxX + buttonSpacing,
+            y: buttonY,
+            width: buttonWidth,
+            height: buttonWidth
+        )
+        strikethroughLabel.frame = CGRect(
+            x: strikethroughButton.x,
+            y: labelY,
+            width: buttonWidth,
+            height: 12
+        )
+        
+        // Opacity slider (above style buttons)
+        let opacityY = styleButtonY - 50
+        opacityContainerView.frame = CGRect(x: 0, y: opacityY, width: width, height: 50)
+        opacityTitleLabel.frame = CGRect(
+            x: UIDevice.leftMargin + 10,
+            y: 15,
+            width: 50,
+            height: 20
+        )
+        opacitySlider.frame = CGRect(
+            x: opacityTitleLabel.frame.maxX + 20,
+            y: 10,
+            width: width - opacityTitleLabel.frame.maxX - 40 - UIDevice.rightMargin,
+            height: 30
+        )
+        
+        // Font size controls (above opacity)
+        let fontSizeY = opacityY - 50
+        fontSizeContainerView.frame = CGRect(x: 0, y: fontSizeY, width: width, height: 50)
+        fontSizeTitleLabel.frame = CGRect(
+            x: UIDevice.leftMargin + 10,
+            y: 15,
+            width: 50,
+            height: 20
+        )
+        let controlWidth: CGFloat = 40
+        let labelWidth: CGFloat = 80
+        fontSizeMinusButton.frame = CGRect(
+            x: fontSizeTitleLabel.frame.maxX + 20,
+            y: 10,
+            width: controlWidth,
+            height: 30
+        )
+        fontSizeLabel.frame = CGRect(
+            x: fontSizeMinusButton.frame.maxX + 10,
+            y: 10,
+            width: labelWidth,
+            height: 30
+        )
+        fontSizePlusButton.frame = CGRect(
+            x: fontSizeLabel.frame.maxX + 10,
+            y: 10,
+            width: controlWidth,
+            height: 30
+        )
+        
+        // Color picker (above font size)
+        textButton.frame = CGRect(
+            x: UIDevice.leftMargin,
+            y: fontSizeY - 50,
+            width: 50,
+            height: 50
+        )
         collectionView.frame = CGRect(
             x: textButton.frame.maxX,
             y: textButton.y,
             width: width - textButton.width,
             height: 50
         )
+        
+        // Text view
         textView.frame = CGRect(x: 10, y: 0, width: width - 20, height: textButton.y)
         textView.textContainerInset = UIEdgeInsets(
             top: 15,

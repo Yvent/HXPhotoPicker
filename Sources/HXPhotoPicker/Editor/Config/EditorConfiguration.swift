@@ -378,6 +378,18 @@ public extension EditorConfiguration {
         /// 文本字体
         public var font: UIFont = .boldSystemFont(ofSize: 25)
         
+        /// Minimum font size
+        /// 最小字号
+        public var minFontSize: CGFloat = 10
+        
+        /// Maximum font size
+        /// 最大字号
+        public var maxFontSize: CGFloat = 100
+        
+        /// Default font size
+        /// 默认字号
+        public var defaultFontSize: CGFloat = 25
+        
         /// Maximum character limit, 0 means no limit
         /// 最大字数限制，0为不限制
         public var maximumLimitTextLength: Int = 0

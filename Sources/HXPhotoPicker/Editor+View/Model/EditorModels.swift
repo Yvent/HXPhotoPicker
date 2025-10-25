@@ -171,12 +171,35 @@ public struct EditorStickerText {
     public let text: String
     public let textColor: UIColor
     public let showBackgroud: Bool
+    public let fontSize: CGFloat
+    public let isBold: Bool
+    public let isItalic: Bool
+    public let hasUnderline: Bool
+    public let hasStrikethrough: Bool
+    public let textAlpha: CGFloat
     
-    public init(image: UIImage, text: String, textColor: UIColor, showBackgroud: Bool) {
+    public init(
+        image: UIImage,
+        text: String,
+        textColor: UIColor,
+        showBackgroud: Bool,
+        fontSize: CGFloat = 25,
+        isBold: Bool = false,
+        isItalic: Bool = false,
+        hasUnderline: Bool = false,
+        hasStrikethrough: Bool = false,
+        textAlpha: CGFloat = 1.0
+    ) {
         self.image = image
         self.text = text
         self.textColor = textColor
         self.showBackgroud = showBackgroud
+        self.fontSize = fontSize
+        self.isBold = isBold
+        self.isItalic = isItalic
+        self.hasUnderline = hasUnderline
+        self.hasStrikethrough = hasStrikethrough
+        self.textAlpha = textAlpha
     }
 }
 
@@ -444,6 +467,12 @@ extension EditorStickerText: Codable {
         case text
         case textColor
         case showBackgroud
+        case fontSize
+        case isBold
+        case isItalic
+        case hasUnderline
+        case hasStrikethrough
+        case textAlpha
     }
     
     public init(from decoder: Decoder) throws {
@@ -462,6 +491,12 @@ extension EditorStickerText: Codable {
             textColor = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(colorData) as! UIColor
         }
         showBackgroud = try container.decode(Bool.self, forKey: .showBackgroud)
+        fontSize = try container.decodeIfPresent(CGFloat.self, forKey: .fontSize) ?? 25
+        isBold = try container.decodeIfPresent(Bool.self, forKey: .isBold) ?? false
+        isItalic = try container.decodeIfPresent(Bool.self, forKey: .isItalic) ?? false
+        hasUnderline = try container.decodeIfPresent(Bool.self, forKey: .hasUnderline) ?? false
+        hasStrikethrough = try container.decodeIfPresent(Bool.self, forKey: .hasStrikethrough) ?? false
+        textAlpha = try container.decodeIfPresent(CGFloat.self, forKey: .textAlpha) ?? 1.0
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -478,6 +513,12 @@ extension EditorStickerText: Codable {
         }
         try container.encode(text, forKey: .text)
         try container.encode(showBackgroud, forKey: .showBackgroud)
+        try container.encode(fontSize, forKey: .fontSize)
+        try container.encode(isBold, forKey: .isBold)
+        try container.encode(isItalic, forKey: .isItalic)
+        try container.encode(hasUnderline, forKey: .hasUnderline)
+        try container.encode(hasStrikethrough, forKey: .hasStrikethrough)
+        try container.encode(textAlpha, forKey: .textAlpha)
     }
 }
 
