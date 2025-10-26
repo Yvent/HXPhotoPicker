@@ -121,8 +121,15 @@ class EditorStickerTextView: UIView {
     }
     
     private func initViews() {
-        // Load font families
-        fontFamilies = UIFont.familyNames.sorted()
+        // Load all font names (not families) for better preview
+        var allFonts: [String] = []
+        for familyName in UIFont.familyNames {
+            let fontNames = UIFont.fontNames(forFamilyName: familyName)
+            if let firstName = fontNames.first {
+                allFonts.append(firstName)
+            }
+        }
+        fontFamilies = allFonts.sorted()
         
         // Segmented control for tab switching
         segmentedControl = UISegmentedControl(items: ["样式", "字体"])
@@ -328,9 +335,11 @@ class EditorStickerTextView: UIView {
             updateStyleButtonStates()
             
             // Select font in collection if custom font
-            if let fontName = currentFontName, let index = fontFamilies.firstIndex(of: fontName) {
-                let indexPath = IndexPath(item: index, section: 0)
-                fontCollectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredHorizontally)
+            if let fontName = currentFontName {
+                if let index = fontFamilies.firstIndex(of: fontName) {
+                    let indexPath = IndexPath(item: index, section: 0)
+                    fontCollectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredHorizontally)
+                }
             }
         }
         setupTextAttributes()
@@ -374,8 +383,14 @@ class EditorStickerTextView: UIView {
     private func getCurrentFont() -> UIFont {
         // Get base font
         let baseFont: UIFont
-        if let fontName = currentFontName, let customFont = UIFont(name: fontName, size: currentFontSize) {
-            baseFont = customFont
+        if let fontName = currentFontName {
+            // Try to create font directly with the name
+            if let customFont = UIFont(name: fontName, size: currentFontSize) {
+                baseFont = customFont
+            } else {
+                // Fallback to system font if custom font fails
+                baseFont = .systemFont(ofSize: currentFontSize)
+            }
         } else if isBold && isItalic {
             if let descriptor = UIFont.systemFont(ofSize: currentFontSize).fontDescriptor
                 .withSymbolicTraits([.traitBold, .traitItalic]) {
@@ -931,8 +946,8 @@ extension EditorStickerTextView {
                 withReuseIdentifier: "FontCollectionViewCellID",
                 for: indexPath
             ) as! FontCollectionViewCell
-            let fontFamily = fontFamilies[indexPath.item]
-            cell.configure(with: fontFamily, fontSize: currentFontSize)
+            let fontName = fontFamilies[indexPath.item]
+            cell.configure(with: fontName)
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(
@@ -951,8 +966,8 @@ extension EditorStickerTextView {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView == fontCollectionView {
-            let fontFamily = fontFamilies[indexPath.item]
-            currentFontName = fontFamily
+            let fontName = fontFamilies[indexPath.item]
+            currentFontName = fontName
             updateTextAttributes()
             collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
         } else {
@@ -1065,15 +1080,15 @@ class FontCollectionViewCell: UICollectionViewCell {
         }
     }
     
-    func configure(with fontFamily: String, fontSize: CGFloat) {
-        fontLabel.text = "美图"
-        nameLabel.text = fontFamily
+    func configure(with fontName: String) {
+        fontLabel.text = "ootd"
+        nameLabel.text = fontName
         
-        // Try to use the font family for display
-        if let font = UIFont(name: fontFamily, size: 20) {
-            fontLabel.font = font
+        // 使用自定义字体渲染预览文本
+        if let customFont = UIFont(name: fontName, size: 20) {
+            fontLabel.font = customFont
         } else {
-            // Fallback to system font if the font family doesn't work
+            // 如果字体加载失败，使用系统字体
             fontLabel.font = .systemFont(ofSize: 20)
         }
     }
