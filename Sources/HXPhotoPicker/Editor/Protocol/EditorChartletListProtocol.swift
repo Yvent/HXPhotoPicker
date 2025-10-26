@@ -9,8 +9,17 @@
 import UIKit
 
 public enum EditorChartletType {
-    case image(UIImage)
-    case data(Data)
+    case image(UIImage, chartlet: EditorChartlet? = nil)
+    case data(Data, chartlet: EditorChartlet? = nil)
+    
+    var chartlet: EditorChartlet? {
+        switch self {
+        case .image(_, let chartlet):
+            return chartlet
+        case .data(_, let chartlet):
+            return chartlet
+        }
+    }
 }
 
 public protocol EditorChartletListDelegate: AnyObject {

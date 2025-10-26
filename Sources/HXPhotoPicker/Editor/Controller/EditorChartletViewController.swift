@@ -537,11 +537,11 @@ extension EditorChartletViewController: UICollectionViewDataSource,
         titleView.reloadData()
         listView.reloadData()
     }
-    func listCell(_ cell: EditorChartletViewListCell, didSelectImage image: UIImage, imageData: Data?) {
+    func listCell(_ cell: EditorChartletViewListCell, didSelectImage image: UIImage, imageData: Data?, chartlet: EditorChartlet) {
         if let imageData {
-            delegate?.chartletList(self, didSelectedWith: .data(imageData))
+            delegate?.chartletList(self, didSelectedWith: .data(imageData, chartlet: chartlet))
         }else {
-            delegate?.chartletList(self, didSelectedWith: .image(image))
+            delegate?.chartletList(self, didSelectedWith: .image(image, chartlet: chartlet))
         }
         didBackButtonClick()
     }

@@ -8,7 +8,7 @@
 import UIKit
 
 protocol EditorChartletViewListCellDelegate: AnyObject {
-    func listCell(_ cell: EditorChartletViewListCell, didSelectImage image: UIImage, imageData: Data?)
+    func listCell(_ cell: EditorChartletViewListCell, didSelectImage image: UIImage, imageData: Data?, chartlet: EditorChartlet)
 }
 
 class EditorChartletViewListCell: UICollectionViewCell,
@@ -99,6 +99,7 @@ class EditorChartletViewListCell: UICollectionViewCell,
     ) {
         collectionView.deselectItem(at: indexPath, animated: false)
         let cell = collectionView.cellForItem(at: indexPath) as! EditorChartletViewCell
+        let chartlet = chartletList[indexPath.item]
         if var image = cell.chartlet.image {
             let imageData: Data?
             if editorType == .image {
@@ -114,7 +115,8 @@ class EditorChartletViewListCell: UICollectionViewCell,
             delegate?.listCell(
                 self,
                 didSelectImage: image,
-                imageData: imageData
+                imageData: imageData,
+                chartlet: chartlet
             )
         }else {
             if let url = cell.chartlet.url, cell.downloadCompletion {
@@ -126,16 +128,16 @@ class EditorChartletViewListCell: UICollectionViewCell,
                     case .success(let result):
                         if let image = result.image {
                             if self.editorType == .image {
-                                self.delegate?.listCell(self, didSelectImage: image, imageData: nil)
+                                self.delegate?.listCell(self, didSelectImage: image, imageData: nil, chartlet: chartlet)
                                 return
                             }
-                            self.delegate?.listCell(self, didSelectImage: image, imageData: result.imageData)
+                            self.delegate?.listCell(self, didSelectImage: image, imageData: result.imageData, chartlet: chartlet)
                         }else if let imageData = result.imageData, let image = UIImage(data: imageData) {
                             if self.editorType == .image {
-                                self.delegate?.listCell(self, didSelectImage: image, imageData: nil)
+                                self.delegate?.listCell(self, didSelectImage: image, imageData: nil, chartlet: chartlet)
                                 return
                             }
-                            self.delegate?.listCell(self, didSelectImage: image, imageData: imageData)
+                            self.delegate?.listCell(self, didSelectImage: image, imageData: imageData, chartlet: chartlet)
                         }
                     case .failure:
                         return
