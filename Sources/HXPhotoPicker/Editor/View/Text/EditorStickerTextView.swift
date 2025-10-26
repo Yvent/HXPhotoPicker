@@ -144,15 +144,16 @@ class EditorStickerTextView: UIView {
         addSubview(fontListContainerView)
         
         fontFlowLayout = UICollectionViewFlowLayout()
-        fontFlowLayout.scrollDirection = .horizontal
+        fontFlowLayout.scrollDirection = .vertical
         fontFlowLayout.minimumInteritemSpacing = 10
+        fontFlowLayout.minimumLineSpacing = 10
         fontFlowLayout.itemSize = CGSize(width: 100, height: 60)
         fontCollectionView = UICollectionView(frame: .zero, collectionViewLayout: fontFlowLayout)
         fontCollectionView.backgroundColor = .clear
         fontCollectionView.delegate = self
         fontCollectionView.dataSource = self
         fontCollectionView.showsHorizontalScrollIndicator = false
-        fontCollectionView.showsVerticalScrollIndicator = false
+        fontCollectionView.showsVerticalScrollIndicator = true
         if #available(iOS 11.0, *) {
             fontCollectionView.contentInsetAdjustmentBehavior = .never
         }
@@ -338,7 +339,7 @@ class EditorStickerTextView: UIView {
             if let fontName = currentFontName {
                 if let index = fontFamilies.firstIndex(of: fontName) {
                     let indexPath = IndexPath(item: index, section: 0)
-                    fontCollectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredHorizontally)
+                    fontCollectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredVertically)
                 }
             }
         }
@@ -805,9 +806,9 @@ class EditorStickerTextView: UIView {
             height: bottomY - segmentedControl.frame.maxY - 10
         )
         fontFlowLayout.sectionInset = UIEdgeInsets(
-            top: 0,
+            top: 10,
             left: UIDevice.leftMargin + 10,
-            bottom: 0,
+            bottom: 10,
             right: UIDevice.rightMargin + 10
         )
         fontCollectionView.frame = fontListContainerView.bounds
@@ -969,7 +970,7 @@ extension EditorStickerTextView {
             let fontName = fontFamilies[indexPath.item]
             currentFontName = fontName
             updateTextAttributes()
-            collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
+            collectionView.scrollToItem(at: indexPath, at: .centeredVertically, animated: true)
         } else {
             // Original color selection logic
             let colorHex = config.colors[indexPath.item]
