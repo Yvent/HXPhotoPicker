@@ -132,7 +132,7 @@ class EditorStickerTextView: UIView {
         fontFamilies = allFonts.sorted()
         
         // Segmented control for tab switching
-        segmentedControl = UISegmentedControl(items: ["样式", "字体"])
+        segmentedControl = UISegmentedControl(items: ["Style", "Font"])
         segmentedControl.selectedSegmentIndex = 0
         segmentedControl.addTarget(self, action: #selector(didSegmentedControlChanged(_:)), for: .valueChanged)
         addSubview(segmentedControl)
@@ -203,7 +203,7 @@ class EditorStickerTextView: UIView {
         addSubview(fontSizeContainerView)
         
         fontSizeTitleLabel = UILabel()
-        fontSizeTitleLabel.text = "字号"
+        fontSizeTitleLabel.text = "Size"
         fontSizeTitleLabel.textColor = .white
         fontSizeTitleLabel.font = .systemFont(ofSize: 14)
         fontSizeTitleLabel.textAlignment = .center
@@ -243,7 +243,7 @@ class EditorStickerTextView: UIView {
         addSubview(opacityContainerView)
         
         opacityTitleLabel = UILabel()
-        opacityTitleLabel.text = "透明"
+        opacityTitleLabel.text = "Opacity"
         opacityTitleLabel.textColor = .white
         opacityTitleLabel.font = .systemFont(ofSize: 14)
         opacityTitleLabel.textAlignment = .center
@@ -266,13 +266,13 @@ class EditorStickerTextView: UIView {
         boldButton = createStyleButton(title: "B", action: #selector(didBoldButtonClick))
         boldButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
         styleContainerView.addSubview(boldButton)
-        boldLabel = createStyleLabel(text: "粗体")
+        boldLabel = createStyleLabel(text: "Bold")
         styleContainerView.addSubview(boldLabel)
         
         italicButton = createStyleButton(title: "I", action: #selector(didItalicButtonClick))
         italicButton.titleLabel?.font = .italicSystemFont(ofSize: 18)
         styleContainerView.addSubview(italicButton)
-        italicLabel = createStyleLabel(text: "斜体")
+        italicLabel = createStyleLabel(text: "Italic")
         styleContainerView.addSubview(italicLabel)
         
         underlineButton = createStyleButton(title: "U", action: #selector(didUnderlineButtonClick))
@@ -282,7 +282,7 @@ class EditorStickerTextView: UIView {
         ]
         underlineButton.setAttributedTitle(NSAttributedString(string: "U", attributes: underlineAttributes), for: .normal)
         styleContainerView.addSubview(underlineButton)
-        underlineLabel = createStyleLabel(text: "下划线")
+        underlineLabel = createStyleLabel(text: "Underline")
         styleContainerView.addSubview(underlineLabel)
         
         strikethroughButton = createStyleButton(title: "S", action: #selector(didStrikethroughButtonClick))
@@ -292,7 +292,7 @@ class EditorStickerTextView: UIView {
         ]
         strikethroughButton.setAttributedTitle(NSAttributedString(string: "S", attributes: strikethroughAttributes), for: .normal)
         styleContainerView.addSubview(strikethroughButton)
-        strikethroughLabel = createStyleLabel(text: "删除线")
+        strikethroughLabel = createStyleLabel(text: "Strike")
         styleContainerView.addSubview(strikethroughLabel)
     }
     
