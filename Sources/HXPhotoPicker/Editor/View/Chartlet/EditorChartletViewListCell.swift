@@ -90,7 +90,23 @@ class EditorChartletViewListCell: UICollectionViewCell,
         let margin = collectionView.contentInset.left + collectionView.contentInset.right
         let spacing = flowLayout.minimumLineSpacing * (rowCount - 1)
         let itemWidth = (width - margin - spacing) / rowCount
-        return CGSize(width: itemWidth, height: itemWidth)
+        
+        // 计算额外高度以容纳 name 和 description
+        let chartlet = chartletList[indexPath.item]
+        var extraHeight: CGFloat = 0
+        
+        if let name = chartlet.name, !name.isEmpty {
+            extraHeight += 18 // nameLabel 高度
+        }
+        if let description = chartlet.description, !description.isEmpty {
+            extraHeight += 32 // descriptionLabel 高度（2行）
+        }
+        if extraHeight > 0 {
+            extraHeight += 4 // 图片与文本之间的间距
+        }
+        
+        let itemHeight = itemWidth + extraHeight
+        return CGSize(width: itemWidth, height: itemHeight)
     }
     
     func collectionView(
