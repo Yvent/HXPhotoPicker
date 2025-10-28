@@ -730,7 +730,7 @@ open class EditorViewController: HXBaseViewController {
         }
         
         // 布局新的顶部按钮
-        let topMargin: CGFloat = UIDevice.topMargin + 10
+        let topMargin: CGFloat = UIDevice.topMargin
         let topButtonHeight: CGFloat = 44
         let topButtonMargin: CGFloat = 12
         
