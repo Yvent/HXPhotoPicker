@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Photos
 
 extension EditorViewController {
     
@@ -247,6 +248,117 @@ extension EditorViewController {
             drawUndoBtn.isEnabled = editorView.isCanvasCanUndo
             drawRedoBtn.isEnabled = editorView.isCanvasCanRedo
             drawUndoAllBtn.isEnabled = !editorView.isCanvasEmpty
+        }
+    }
+    
+    // MARK: - 新增按钮事件
+    
+    @objc
+    func didBackButtonClick() {
+        backClick(true)
+    }
+    
+    @objc
+    func didShareButtonClick() {
+        // 检查是否有编辑内容需要合成
+        if editorView.isCropedImage || imageFilter != nil || filterEditFator.isApply {
+            PhotoManager.HUDView.show(with: .textManager.editor.processingHUDTitle.text, delay: 0, animated: true, addedTo: view)
+            editorView.cropImage { [weak self] result in
+                guard let self = self else { return }
+                PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
+                switch result {
+                case .success(let imageResult):
+                    // ✅ 使用完整质量的图片URL，而不是缩略图
+                    self.shareImageURL(imageResult.url)
+                case .failure:
+                    PhotoManager.HUDView.showInfo(with: .textManager.editor.processingFailedHUDTitle.text, delay: 1.5, animated: true, addedTo: self.view)
+                }
+            }
+        } else {
+            // 没有编辑，直接分享原图
+            shareImage(editorView.image)
+        }
+    }
+    
+    private func shareImage(_ image: UIImage?) {
+        guard let image = image else { return }
+        let activityVC = UIActivityViewController(
+            activityItems: [image],
+            applicationActivities: nil
+        )
+        // iPad 适配
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = shareButton
+            popover.sourceRect = shareButton.bounds
+        }
+        present(activityVC, animated: true)
+    }
+    
+    private func shareImageURL(_ url: URL) {
+        let activityVC = UIActivityViewController(
+            activityItems: [url],
+            applicationActivities: nil
+        )
+        // iPad 适配
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = shareButton
+            popover.sourceRect = shareButton.bounds
+        }
+        present(activityVC, animated: true)
+    }
+    
+    @objc
+    func didSaveButtonClick() {
+        // 检查是否有编辑内容需要合成
+        if editorView.isCropedImage || imageFilter != nil || filterEditFator.isApply {
+            PhotoManager.HUDView.show(with: .textManager.editor.processingHUDTitle.text, delay: 0, animated: true, addedTo: view)
+            editorView.cropImage { [weak self] result in
+                guard let self = self else { return }
+                PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
+                switch result {
+                case .success(let imageResult):
+                    // ✅ 使用完整质量的图片URL，而不是缩略图
+                    self.saveToPhotoLibraryURL(imageResult.url)
+                case .failure:
+                    PhotoManager.HUDView.showInfo(with: .textManager.editor.processingFailedHUDTitle.text, delay: 1.5, animated: true, addedTo: self.view)
+                }
+            }
+        } else {
+            // 没有编辑，直接保存原图
+            saveToPhotoLibrary(editorView.image)
+        }
+    }
+    
+    private func saveToPhotoLibrary(_ image: UIImage?) {
+        guard let image = image else { return }
+        
+        PhotoManager.HUDView.show(with: "正在保存...", delay: 0, animated: true, addedTo: view)
+        
+        AssetManager.save(type: .image(image)) { [weak self] (result: Result<PHAsset, AssetSaveUtil.SaveError>) in
+            guard let self = self else { return }
+            PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
+            switch result {
+            case .success:
+                PhotoManager.HUDView.showInfo(with: "已保存到相册", delay: 1.5, animated: true, addedTo: self.view)
+            case .failure:
+                PhotoManager.HUDView.showInfo(with: "保存失败", delay: 1.5, animated: true, addedTo: self.view)
+            }
+        }
+    }
+    
+    private func saveToPhotoLibraryURL(_ url: URL) {
+        PhotoManager.HUDView.show(with: "正在保存...", delay: 0, animated: true, addedTo: view)
+        
+        // ✅ 使用完整质量图片的URL保存
+        AssetManager.save(type: .imageURL(url)) { [weak self] (result: Result<PHAsset, AssetSaveUtil.SaveError>) in
+            guard let self = self else { return }
+            PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
+            switch result {
+            case .success:
+                PhotoManager.HUDView.showInfo(with: "已保存到相册", delay: 1.5, animated: true, addedTo: self.view)
+            case .failure:
+                PhotoManager.HUDView.showInfo(with: "保存失败", delay: 1.5, animated: true, addedTo: self.view)
+            }
         }
     }
     

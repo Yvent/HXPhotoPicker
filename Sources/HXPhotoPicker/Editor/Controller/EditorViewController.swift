@@ -69,6 +69,9 @@ open class EditorViewController: HXBaseViewController {
     var cancelButton: UIButton!
     var finishButton: UIButton!
     var resetButton: UIButton!
+    var backButton: UIButton!
+    var shareButton: UIButton!
+    var saveButton: UIButton!
     var leftRotateButton: UIButton!
     var rightRotateButton: UIButton!
     var mirrorHorizontallyButton: UIButton!
@@ -240,6 +243,36 @@ open class EditorViewController: HXBaseViewController {
         resetButton.addTarget(self, action: #selector(didResetButtonClick(button:)), for: .touchUpInside)
         resetButton.alpha = 0
         resetButton.isHidden = true
+        
+        // 返回按钮
+        backButton = UIButton(type: .system)
+        if #available(iOS 13.0, *) {
+            backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        } else {
+            backButton.setTitle("←", for: .normal)
+        }
+        backButton.tintColor = .white
+        backButton.addTarget(self, action: #selector(didBackButtonClick), for: .touchUpInside)
+        
+        // 分享按钮
+        shareButton = UIButton(type: .system)
+        if #available(iOS 13.0, *) {
+            shareButton.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
+        } else {
+            shareButton.setTitle("分享", for: .normal)
+        }
+        shareButton.tintColor = .white
+        shareButton.addTarget(self, action: #selector(didShareButtonClick), for: .touchUpInside)
+        
+        // 保存按钮
+        saveButton = UIButton(type: .system)
+        if #available(iOS 13.0, *) {
+            saveButton.setImage(UIImage(systemName: "arrow.down.to.line"), for: .normal)
+        } else {
+            saveButton.setTitle("保存", for: .normal)
+        }
+        saveButton.tintColor = .white
+        saveButton.addTarget(self, action: #selector(didSaveButtonClick), for: .touchUpInside)
         
         leftRotateButton = ExpandButton(type: .system)
         leftRotateButton.setImage(.imageResource.editor.crop.rotateLeft.image, for: .normal)
@@ -504,6 +537,15 @@ open class EditorViewController: HXBaseViewController {
         view.addSubview(cancelButton)
         view.addSubview(finishButton)
         
+        // 添加新的顶部按钮
+        view.addSubview(backButton)
+        view.addSubview(shareButton)
+        view.addSubview(saveButton)
+        
+        // 隐藏原有的底部按钮
+        cancelButton.isHidden = true
+        finishButton.isHidden = true
+        
         if #available(iOS 13.0, *) {
             view.addSubview(drawUndoBtn)
             view.addSubview(drawRedoBtn)
@@ -686,6 +728,36 @@ open class EditorViewController: HXBaseViewController {
         if selectedTool?.type != .graffiti || orientationDidChange {
             editorView.frame = view.bounds
         }
+        
+        // 布局新的顶部按钮
+        let topMargin: CGFloat = UIDevice.topMargin + 10
+        let topButtonHeight: CGFloat = 44
+        let topButtonMargin: CGFloat = 12
+        
+        // 返回按钮（左侧）
+        backButton.frame = CGRect(
+            x: UIDevice.leftMargin + topButtonMargin,
+            y: topMargin,
+            width: 44,
+            height: topButtonHeight
+        )
+        
+        // 保存按钮（右侧）
+        saveButton.frame = CGRect(
+            x: view.width - UIDevice.rightMargin - topButtonMargin - 44,
+            y: topMargin,
+            width: 44,
+            height: topButtonHeight
+        )
+        
+        // 分享按钮（保存按钮左边）
+        shareButton.frame = CGRect(
+            x: saveButton.x - 10 - 44,
+            y: topMargin,
+            width: 44,
+            height: topButtonHeight
+        )
+        
         let buttonHeight: CGFloat
         if UIDevice.isPortrait && config.buttonType == .bottom {
             buttonHeight = 50
