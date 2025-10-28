@@ -117,14 +117,16 @@ extension EditorViewController: EditorToolsViewDelegate {
             return
         }
         toolsView.isHidden = false
-        cancelButton.isHidden = false
-        finishButton.isHidden = false
+        // ✅ 非裁剪模式：保持底部按钮隐藏，使用顶部按钮
+        // cancelButton.isHidden = false
+        // finishButton.isHidden = false
         topMaskView.isHidden = false
         bottomMaskView.isHidden = false
         UIView.animate(withDuration: 0.2) {
             self.toolsView.alpha = 1
-            self.cancelButton.alpha = 1
-            self.finishButton.alpha = 1
+            // ✅ 非裁剪模式：保持底部按钮隐藏
+            // self.cancelButton.alpha = 1
+            // self.finishButton.alpha = 1
             if !UIDevice.isPortrait || self.config.buttonType == .top {
                 self.topMaskView.alpha = 1
             }
@@ -170,8 +172,9 @@ extension EditorViewController: EditorToolsViewDelegate {
         }
         UIView.animate(withDuration: 0.2) {
             self.toolsView.alpha = 0
-            self.cancelButton.alpha = 0
-            self.finishButton.alpha = 0
+            // ✅ 非裁剪模式：保持底部按钮隐藏
+            // self.cancelButton.alpha = 0
+            // self.finishButton.alpha = 0
             if !isCanvasGraffiti {
                 self.topMaskView.alpha = 0
             }
@@ -179,8 +182,9 @@ extension EditorViewController: EditorToolsViewDelegate {
         } completion: {
             if $0 {
                 self.toolsView.isHidden = true
-                self.cancelButton.isHidden = true
-                self.finishButton.isHidden = true
+                // ✅ 非裁剪模式：保持底部按钮隐藏
+                // self.cancelButton.isHidden = true
+                // self.finishButton.isHidden = true
                 if !isCanvasGraffiti {
                     self.topMaskView.isHidden = true
                 }
@@ -583,6 +587,13 @@ extension EditorViewController: EditorToolsViewDelegate {
         mirrorVerticallyButton.isHidden = false
         mirrorHorizontallyButton.isHidden = false
         
+        // ✅ 进入裁剪模式：隐藏顶部按钮，显示底部按钮
+        backButton.isHidden = true
+        shareButton.isHidden = true
+        saveButton.isHidden = true
+        cancelButton.isHidden = false
+        finishButton.isHidden = false
+        
         var isShowMaskList: Bool = true
         if let ratio = ratioToolView.selectedRatio?.ratio, (ratio.width < 0 || ratio.height < 0) {
             isShowMaskList = false
@@ -604,6 +615,9 @@ extension EditorViewController: EditorToolsViewDelegate {
             if isShowMaskList {
                 self.maskListButton.alpha = 1
             }
+            // ✅ 进入裁剪模式：设置底部按钮可见
+            self.cancelButton.alpha = 1
+            self.finishButton.alpha = 1
             self.toolsView.alpha = 0
             self.hideMasks()
         } completion: {
@@ -619,6 +633,14 @@ extension EditorViewController: EditorToolsViewDelegate {
         if rotateScaleView.isHidden || rotateScaleView.alpha == 0 {
             return
         }
+        
+        // ✅ 退出裁剪模式：显示顶部按钮，隐藏底部按钮
+        backButton.isHidden = false
+        shareButton.isHidden = false
+        saveButton.isHidden = false
+        cancelButton.isHidden = true
+        finishButton.isHidden = true
+        
         toolsView.isHidden = false
         hideScaleSwitchView()
         UIView.animate(withDuration: 0.2) {
@@ -632,6 +654,9 @@ extension EditorViewController: EditorToolsViewDelegate {
             self.mirrorVerticallyButton.alpha = 0
             self.mirrorHorizontallyButton.alpha = 0
             self.maskListButton.alpha = 0
+            // ✅ 退出裁剪模式：隐藏底部按钮
+            self.cancelButton.alpha = 0
+            self.finishButton.alpha = 0
             self.toolsView.alpha = 1
             self.showMasks()
         } completion: {

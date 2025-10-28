@@ -53,9 +53,12 @@ extension EditorViewController {
     }
     
     func transitionHide() {
-        cancelButton.alpha = 0
+        // ✅ 只在非裁剪模式时隐藏底部按钮（裁剪模式需要显示）
+        if selectedTool?.type != .cropSize {
+            cancelButton.alpha = 0
+            finishButton.alpha = 0
+        }
         toolsView.alpha = 0
-        finishButton.alpha = 0
         bottomMaskView.alpha = 0
         topMaskView.alpha = 0
         if let tool = selectedTool {
@@ -107,11 +110,15 @@ extension EditorViewController {
     }
     
     func showTools(_ isCropSize: Bool = false) {
-        if cancelButton.alpha == 1 {
-            return
+        // ✅ 只在裁剪模式时显示底部按钮
+        if isCropSize {
+            cancelButton.alpha = 1
+            finishButton.alpha = 1
+        } else {
+            // 非裁剪模式保持底部按钮隐藏
+            cancelButton.alpha = 0
+            finishButton.alpha = 0
         }
-        cancelButton.alpha = 1
-        finishButton.alpha = 1
         if !isCropSize {
             toolsView.alpha = 1
             showMasks()
