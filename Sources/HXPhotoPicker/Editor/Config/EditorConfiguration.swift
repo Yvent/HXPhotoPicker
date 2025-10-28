@@ -114,6 +114,10 @@ public struct EditorConfiguration: IndicatorTypeConfig, PhotoHUDConfig, ImageVie
     /// 工具视图配置
     public var toolsView: ToolsView = .default
     
+    /// Preset texts to be added automatically when editor opens
+    /// 打开编辑器时自动添加的预设文本
+    public var presetTexts: [PresetText] = []
+    
     public init() {
         if #available(iOS 13.0, *) {
             modalPresentationStyle = .automatic
@@ -659,6 +663,44 @@ public extension EditorConfiguration {
     enum ButtonType {
         case top
         case bottom
+    }
+    
+    /// Preset text configuration
+    /// 预设文本配置
+    public struct PresetText {
+        public let text: String
+        public let fontSize: CGFloat
+        public let color: UIColor
+        public let position: Position
+        
+        /// Text position
+        /// 文本位置
+        public enum Position {
+            case topLeft
+            case topCenter
+            case topRight
+            case centerLeft
+            case center
+            case centerRight
+            case bottomLeft
+            case bottomCenter
+            case bottomRight
+            /// Custom position using relative coordinates (0.0-1.0)
+            /// 使用相对坐标的自定义位置 (0.0-1.0)
+            case custom(CGPoint)
+        }
+        
+        public init(
+            text: String,
+            fontSize: CGFloat = 25,
+            color: UIColor = .white,
+            position: Position = .center
+        ) {
+            self.text = text
+            self.fontSize = fontSize
+            self.color = color
+            self.position = position
+        }
     }
     
 } 

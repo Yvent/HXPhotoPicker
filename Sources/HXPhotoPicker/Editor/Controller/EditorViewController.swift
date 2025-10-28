@@ -843,6 +843,12 @@ open class EditorViewController: HXBaseViewController {
             loadCorpSizeData()
             editorView.layoutSubviews()
             checkLastResultState()
+            
+            // ✅ Add preset texts after layout is complete
+            // 在布局完成后添加预设文本
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.addPresetTexts()
+            }
         }
         updateVideoControlInfo()
         if orientationDidChange {
