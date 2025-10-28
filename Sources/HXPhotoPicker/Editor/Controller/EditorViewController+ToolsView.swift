@@ -335,6 +335,12 @@ extension EditorViewController: EditorToolsViewDelegate {
         if !drawCancelButton.isHidden && drawCancelButton.alpha == 1 {
             return
         }
+        
+        // ✅ 进入Canvas画笔模式：隐藏顶部按钮
+        backButton.isHidden = true
+        shareButton.isHidden = true
+        saveButton.isHidden = true
+        
         editorView.hideStickersView()
         drawCancelButton.isHidden = false
         drawFinishButton.isHidden = false
@@ -359,6 +365,12 @@ extension EditorViewController: EditorToolsViewDelegate {
         if drawCancelButton.isHidden || drawCancelButton.alpha == 0 {
             return
         }
+        
+        // ✅ 退出Canvas画笔模式：显示顶部按钮
+        backButton.isHidden = false
+        shareButton.isHidden = false
+        saveButton.isHidden = false
+        
         if !isRotate {
             editorView.showStickersView()
             editorView.isCanZoomScale = true
@@ -429,6 +441,12 @@ extension EditorViewController: EditorToolsViewDelegate {
         if !brushColorView.isHidden && brushColorView.alpha == 1 {
             return
         }
+        
+        // ✅ 进入普通画笔模式：隐藏顶部按钮
+        backButton.isHidden = true
+        shareButton.isHidden = true
+        saveButton.isHidden = true
+        
         brushColorView.isHidden = false
         brushSizeView.isHidden = false
         UIView.animate(withDuration: 0.2) {
@@ -441,6 +459,12 @@ extension EditorViewController: EditorToolsViewDelegate {
         if brushColorView.isHidden || brushColorView.alpha == 0 {
             return
         }
+        
+        // ✅ 退出普通画笔模式：显示顶部按钮
+        backButton.isHidden = false
+        shareButton.isHidden = false
+        saveButton.isHidden = false
+        
         UIView.animate(withDuration: 0.2) {
             self.brushColorView.alpha = 0
             self.brushSizeView.alpha = 0
@@ -456,6 +480,12 @@ extension EditorViewController: EditorToolsViewDelegate {
         if !mosaicToolView.isHidden && mosaicToolView.alpha == 1 {
             return
         }
+        
+        // ✅ 进入马赛克模式：隐藏顶部按钮
+        backButton.isHidden = true
+        shareButton.isHidden = true
+        saveButton.isHidden = true
+        
         mosaicToolView.isHidden = false
         UIView.animate(withDuration: 0.2) {
             self.mosaicToolView.alpha = 1
@@ -466,6 +496,12 @@ extension EditorViewController: EditorToolsViewDelegate {
         if mosaicToolView.isHidden || mosaicToolView.alpha == 0 {
             return
         }
+        
+        // ✅ 退出马赛克模式：显示顶部按钮
+        backButton.isHidden = false
+        shareButton.isHidden = false
+        saveButton.isHidden = false
+        
         UIView.animate(withDuration: 0.2) {
             self.mosaicToolView.alpha = 0
         } completion: {
