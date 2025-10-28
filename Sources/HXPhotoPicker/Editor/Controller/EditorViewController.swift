@@ -844,10 +844,11 @@ open class EditorViewController: HXBaseViewController {
             editorView.layoutSubviews()
             checkLastResultState()
             
-            // ✅ Add preset texts after layout is complete
-            // 在布局完成后添加预设文本
+            // ✅ Add preset texts and stickers after layout is complete
+            // 在布局完成后添加预设文本和贴纸
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 self?.addPresetTexts()
+                self?.addPresetStickers()
             }
         }
         updateVideoControlInfo()

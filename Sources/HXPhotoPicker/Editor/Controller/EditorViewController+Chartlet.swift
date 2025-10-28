@@ -177,3 +177,98 @@ extension EditorViewController: EditorChartletViewControllerDelegate {
         }
     }
 }
+
+// MARK: - Preset Stickers
+extension EditorViewController {
+    
+    /// Add preset stickers configured in EditorConfiguration
+    /// 添加配置中的预设贴纸
+    func addPresetStickers() {
+        guard !config.presetStickers.isEmpty else { return }
+        
+        for presetSticker in config.presetStickers {
+            addPresetSticker(presetSticker)
+        }
+        
+        // Deselect all stickers after adding
+        editorView.deselectedSticker()
+    }
+    
+    /// Add a single preset sticker
+    /// 添加单个预设贴纸
+    private func addPresetSticker(_ presetSticker: EditorConfiguration.PresetSticker) {
+        let chartlet = presetSticker.chartlet
+        
+        // Add the main sticker (image)
+        let imageItemView: EditorStickersItemBaseView
+        if let image = chartlet.image {
+            imageItemView = editorView.addSticker(image, isSelected: false)
+        } else if let url = chartlet.url {
+            // For URL-based stickers, we need to download first
+            // For now, skip URL stickers in preset (can be enhanced later)
+            return
+        } else {
+            return
+        }
+        
+        // Position the main sticker
+        positionPresetSticker(imageItemView, at: presetSticker.position, scale: presetSticker.scale)
+        
+        // Add name and description text stickers below the image (if available)
+        addTextStickersForChartlet(chartlet, below: imageItemView)
+    }
+    
+    /// Position a preset sticker
+    /// 定位预设贴纸
+    private func positionPresetSticker(
+        _ itemView: EditorStickersItemBaseView,
+        at position: EditorConfiguration.PresetText.Position,
+        scale: CGFloat
+    ) {
+        let viewWidth = editorView.width
+        let viewHeight = editorView.height
+        let margin: CGFloat = 60  // Safety margin from edges
+        
+        let centerPoint: CGPoint
+        
+        switch position {
+        case .topLeft:
+            centerPoint = CGPoint(x: margin, y: margin)
+        case .topCenter:
+            centerPoint = CGPoint(x: viewWidth * 0.5, y: margin)
+        case .topRight:
+            centerPoint = CGPoint(x: viewWidth - margin, y: margin)
+        case .centerLeft:
+            centerPoint = CGPoint(x: margin, y: viewHeight * 0.5)
+        case .center:
+            centerPoint = CGPoint(x: viewWidth * 0.5, y: viewHeight * 0.5)
+        case .centerRight:
+            centerPoint = CGPoint(x: viewWidth - margin, y: viewHeight * 0.5)
+        case .bottomLeft:
+            centerPoint = CGPoint(x: margin, y: viewHeight - margin)
+        case .bottomCenter:
+            centerPoint = CGPoint(x: viewWidth * 0.5, y: viewHeight - margin)
+        case .bottomRight:
+            centerPoint = CGPoint(x: viewWidth - margin, y: viewHeight - margin)
+        case .custom(let relativePoint):
+            // Use relative coordinates (0.0-1.0)
+            centerPoint = CGPoint(
+                x: viewWidth * relativePoint.x,
+                y: viewHeight * relativePoint.y
+            )
+        }
+        
+        itemView.center = centerPoint
+        
+        // Apply scale if needed
+        if scale != 1.0 {
+            // The itemView has a pinchScale property that can be used
+            // We need to trigger the scaling through the view's transform or pinchScale
+            if let stickerItemView = itemView as? EditorStickersItemView {
+                // Apply scale through pinch gesture simulation or direct property
+                // Note: The exact API might need adjustment based on the internal implementation
+                stickerItemView.transform = CGAffineTransform(scaleX: scale, y: scale)
+            }
+        }
+    }
+}

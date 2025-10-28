@@ -118,6 +118,10 @@ public struct EditorConfiguration: IndicatorTypeConfig, PhotoHUDConfig, ImageVie
     /// 打开编辑器时自动添加的预设文本
     public var presetTexts: [PresetText] = []
     
+    /// Preset stickers to be added automatically when editor opens
+    /// 打开编辑器时自动添加的预设贴纸
+    public var presetStickers: [PresetSticker] = []
+    
     public init() {
         if #available(iOS 13.0, *) {
             modalPresentationStyle = .automatic
@@ -700,6 +704,24 @@ public extension EditorConfiguration {
             self.fontSize = fontSize
             self.color = color
             self.position = position
+        }
+    }
+    
+    /// Preset sticker configuration
+    /// 预设贴纸配置
+    public struct PresetSticker {
+        public let chartlet: EditorChartlet
+        public let position: PresetText.Position
+        public let scale: CGFloat
+        
+        public init(
+            chartlet: EditorChartlet,
+            position: PresetText.Position = .center,
+            scale: CGFloat = 1.0
+        ) {
+            self.chartlet = chartlet
+            self.position = position
+            self.scale = scale
         }
     }
     
