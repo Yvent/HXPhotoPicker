@@ -24,6 +24,7 @@ public class EditorChartletViewController: HXBaseViewController, EditorChartletL
     public weak var delegate: EditorChartletListDelegate?
     weak var chartletDelegate: EditorChartletViewControllerDelegate?
     private var loadingView: UIActivityIndicatorView!
+    private var loadingLabel: UILabel!
     private var titleBgView: UIVisualEffectView!
     private var bgView: UIVisualEffectView!
     private var backButton: UIButton!
@@ -61,12 +62,24 @@ public class EditorChartletViewController: HXBaseViewController, EditorChartletL
         view.addSubview(titleView)
         view.addSubview(backButton)
         view.addSubview(loadingView)
+        view.addSubview(loadingLabel)
         requestData()
     }
     
+    /// 初始化视图组件，包括标题/列表与加载指示器及文案
+    /// - Note: 加载文案从配置读取，默认显示 "Retrieving single items from your OOTD"
     private func initViews() {
         loadingView = UIActivityIndicatorView(style: .white)
         loadingView.hidesWhenStopped = true
+        
+        // 加载指示器下方文案
+        loadingLabel = UILabel()
+        loadingLabel.textColor = UIColor.white.withAlphaComponent(0.9)
+        loadingLabel.font = .systemFont(ofSize: 13)
+        loadingLabel.textAlignment = .center
+        loadingLabel.numberOfLines = 2
+        loadingLabel.isHidden = true
+        loadingLabel.text = editorConfig.chartlet.loadingText ?? "Retrieving single items from your OOTD"
         
         let effect = UIBlurEffect(style: .dark)
         titleBgView = UIVisualEffectView(effect: effect)
@@ -223,6 +236,7 @@ public class EditorChartletViewController: HXBaseViewController, EditorChartletL
         didDeviceOrientation = true
     }
     
+    /// 布局子视图，调整loading菊花与文案的位置
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         let viewY: CGFloat
@@ -259,6 +273,15 @@ public class EditorChartletViewController: HXBaseViewController, EditorChartletL
         }
         didDeviceOrientation = false
         loadingView.center = listView.center
+        // 将文案放置在菊花下方
+        let maxLabelWidth = view.width - 40
+        let labelSize = loadingLabel.sizeThatFits(CGSize(width: maxLabelWidth, height: CGFloat.greatestFiniteMagnitude))
+        loadingLabel.frame = CGRect(
+            x: (view.width - min(labelSize.width, maxLabelWidth)) / 2,
+            y: loadingView.frame.maxY + 8,
+            width: min(labelSize.width, maxLabelWidth),
+            height: labelSize.height
+        )
     }
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -301,6 +324,8 @@ extension EditorChartletViewController: UICollectionViewDataSource,
             cell.editorType = editorType
             cell.rowCount = config.rowCount
             cell.delegate = self
+            // 传递加载文案
+            cell.loadingText = editorConfig.chartlet.loadingText ?? "Retrieving single items from your OOTD"
             return cell
         }
     }
@@ -512,9 +537,11 @@ extension EditorChartletViewController: UICollectionViewDataSource,
                 cell?.stopLoad()
         })
     }
+    /// 请求贴纸标题数据，空标题时显示菊花和文案
     func requestData() {
         if titles.isEmpty {
             loadingView.startAnimating()
+            loadingLabel.isHidden = false
             if let titleHandler = config.titleHandler {
                 titleHandler { [weak self] titleChartlets in
                     self?.loadTitlesCompletion(titleChartlets)
@@ -528,8 +555,11 @@ extension EditorChartletViewController: UICollectionViewDataSource,
         }
         requestData(index: 0)
     }
+    /// 标题数据加载完成，停止菊花并隐藏加载文案
+    /// - Parameter titles: 已加载的标题贴纸集合
     func loadTitlesCompletion(_ titles: [EditorChartlet]) {
         loadingView.stopAnimating()
+        loadingLabel.isHidden = true
         setupTitles(titles)
         if config.loadScene == .scrollStop {
             requestData(index: 0)

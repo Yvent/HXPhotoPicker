@@ -17,6 +17,7 @@ class EditorChartletViewListCell: UICollectionViewCell,
                                   UICollectionViewDelegateFlowLayout {
     weak var delegate: EditorChartletViewListCellDelegate?
     private var loadingView: UIActivityIndicatorView!
+    private var loadingLabel: UILabel!
     private var flowLayout: UICollectionViewFlowLayout!
     var collectionView: UICollectionView!
     
@@ -28,6 +29,8 @@ class EditorChartletViewListCell: UICollectionViewCell,
         }
     }
     var editorType: EditorContentViewType = .image
+    /// 加载时显示的文案（由上层传入）
+    var loadingText: String?
     
     func resetOffset() {
         collectionView.contentOffset = CGPoint(
@@ -36,11 +39,16 @@ class EditorChartletViewListCell: UICollectionViewCell,
         )
     }
     
+    /// 开始列表页加载，显示菊花与文案
     func startLoading() {
         loadingView.startAnimating()
+        loadingLabel.text = loadingText
+        loadingLabel.isHidden = (loadingLabel.text == nil || loadingLabel.text?.isEmpty == true) ? true : false
     }
+    /// 停止列表页加载，隐藏菊花与文案
     func stopLoad() {
         loadingView.stopAnimating()
+        loadingLabel.isHidden = true
     }
     
     override init(frame: CGRect) {
@@ -62,6 +70,13 @@ class EditorChartletViewListCell: UICollectionViewCell,
         loadingView = UIActivityIndicatorView(style: .white)
         loadingView.hidesWhenStopped = true
         contentView.addSubview(loadingView)
+        loadingLabel = UILabel()
+        loadingLabel.textColor = UIColor.white.withAlphaComponent(0.9)
+        loadingLabel.font = .systemFont(ofSize: 12)
+        loadingLabel.textAlignment = .center
+        loadingLabel.numberOfLines = 2
+        loadingLabel.isHidden = true
+        contentView.addSubview(loadingLabel)
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -163,10 +178,20 @@ class EditorChartletViewListCell: UICollectionViewCell,
         }
     }
     
+    /// 布局子视图，调整loading文案在菊花下方位置
     override func layoutSubviews() {
         super.layoutSubviews()
         collectionView.frame = bounds
         loadingView.center = CGPoint(x: width * 0.5, y: height * 0.5)
+        // 将文案放置在菊花下方
+        let maxLabelWidth = width - 30
+        let labelSize = loadingLabel.sizeThatFits(CGSize(width: maxLabelWidth, height: CGFloat.greatestFiniteMagnitude))
+        loadingLabel.frame = CGRect(
+            x: (width - min(labelSize.width, maxLabelWidth)) / 2,
+            y: loadingView.frame.maxY + 8,
+            width: min(labelSize.width, maxLabelWidth),
+            height: labelSize.height
+        )
         collectionView.contentInset = UIEdgeInsets(
             top: 60,
             left: 15 + UIDevice.leftMargin,

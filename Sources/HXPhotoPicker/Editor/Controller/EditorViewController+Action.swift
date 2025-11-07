@@ -329,25 +329,33 @@ extension EditorViewController {
         }
     }
     
+    /// 保存当前编辑图片到系统相册（使用UIImage）
+    /// - Parameter image: 需要保存的图片
+    /// - Note: 保存成功后展示对号样式的成功HUD，失败展示提示HUD
     private func saveToPhotoLibrary(_ image: UIImage?) {
         guard let image = image else { return }
         
-        PhotoManager.HUDView.show(with: "正在保存...", delay: 0, animated: true, addedTo: view)
+        // 使用本地化的“正在保存...”文案
+        PhotoManager.HUDView.show(with: .textManager.editor.savingHUDTitle.text, delay: 0, animated: true, addedTo: view)
         
         AssetManager.save(type: .image(image)) { [weak self] (result: Result<PHAsset, AssetSaveUtil.SaveError>) in
             guard let self = self else { return }
             PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
             switch result {
             case .success:
-                PhotoManager.HUDView.showInfo(with: "已保存到相册", delay: 1.5, animated: true, addedTo: self.view)
+                PhotoManager.HUDView.showSuccess(with: .textManager.editor.saveSystemAlbumSuccessHUDTitle.text, delay: 1.5, animated: true, addedTo: self.view)
             case .failure:
                 PhotoManager.HUDView.showInfo(with: "保存失败", delay: 1.5, animated: true, addedTo: self.view)
             }
         }
     }
     
+    /// 保存当前编辑图片到系统相册（使用图片URL）
+    /// - Parameter url: 完整质量图片的URL
+    /// - Note: 保存成功后展示对号样式的成功HUD，失败展示提示HUD
     private func saveToPhotoLibraryURL(_ url: URL) {
-        PhotoManager.HUDView.show(with: "正在保存...", delay: 0, animated: true, addedTo: view)
+        // 使用本地化的“正在保存...”文案
+        PhotoManager.HUDView.show(with: .textManager.editor.savingHUDTitle.text, delay: 0, animated: true, addedTo: view)
         
         // ✅ 使用完整质量图片的URL保存
         AssetManager.save(type: .imageURL(url)) { [weak self] (result: Result<PHAsset, AssetSaveUtil.SaveError>) in
@@ -355,7 +363,7 @@ extension EditorViewController {
             PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
             switch result {
             case .success:
-                PhotoManager.HUDView.showInfo(with: "已保存到相册", delay: 1.5, animated: true, addedTo: self.view)
+                PhotoManager.HUDView.showSuccess(with: .textManager.editor.saveSystemAlbumSuccessHUDTitle.text, delay: 1.5, animated: true, addedTo: self.view)
             case .failure:
                 PhotoManager.HUDView.showInfo(with: "保存失败", delay: 1.5, animated: true, addedTo: self.view)
             }

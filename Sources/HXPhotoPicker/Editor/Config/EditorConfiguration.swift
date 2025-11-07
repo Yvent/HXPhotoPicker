@@ -525,6 +525,9 @@ public extension EditorConfiguration {
         public var loadScene: LoadScene = .cellDisplay
         /// 贴图标题
         public var titles: [EditorChartlet] = []
+        /// 贴纸页加载指示器下方文案（可自定义）
+        /// 默认显示 "Retrieving single items from your OOTD"
+        public var loadingText: String? = nil
         
         #if HXPICKER_ENABLE_PICKER
         /// 是否允许添加 从相册选取
@@ -725,4 +728,4 @@ public extension EditorConfiguration {
         }
     }
     
-} 
+}

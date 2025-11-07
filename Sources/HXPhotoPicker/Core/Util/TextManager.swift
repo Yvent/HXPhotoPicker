@@ -239,6 +239,14 @@ public extension HX.TextManager {
         public var processingHUDTitle: TextType = .localized("正在处理...")
         public var processingFailedHUDTitle: TextType = .localized("处理失败")
         
+        /// 保存到系统相册时的加载提示文案
+        /// - 默认键："正在保存..."，走本地化，未命中时回退原文
+        public var savingHUDTitle: TextType = .localized("正在保存...")
+        
+        /// 保存到系统相册成功的提示文案
+        /// - 使用项目本地化系统，默认键为中文短语，未命中翻译时回退原文
+        public var saveSystemAlbumSuccessHUDTitle: TextType = .localized("已保存到相册")
+        
         public struct Tools {
             public var cancelTitle: TextType = .localized("取消")
             public var cancelTitleFont: UIFont = HXPickerWrapper<UIFont>.regularPingFang(ofSize: 17)
