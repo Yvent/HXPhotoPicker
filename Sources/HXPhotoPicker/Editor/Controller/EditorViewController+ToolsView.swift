@@ -1011,8 +1011,8 @@ class EditorMainImagePickerView: UIView {
     private func initViews() {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
-        layout.minimumInteritemSpacing = 10
-        layout.itemSize = CGSize(width: 80, height: 80)
+        layout.minimumInteritemSpacing = 8
+        layout.itemSize = CGSize(width: 36, height: 36)
         layout.sectionInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
 
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -1085,19 +1085,26 @@ extension EditorMainImagePickerView: UICollectionViewDataSource, UICollectionVie
     }
 }
 
-// MARK: - MainImagePickerCell
+// MARK: - MainImagePickerCell (参考 SimpleColorCell 的风格)
 
 class MainImagePickerCell: UICollectionViewCell {
-    private var imageView: UIView!
+    private var colorBgView: UIView!
+    private var colorView: UIView!
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        imageView = UIView()
-        imageView.layer.cornerRadius = 8
-        imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 2
-        imageView.layer.borderColor = UIColor.white.cgColor
-        contentView.addSubview(imageView)
+
+        colorBgView = UIView()
+        colorBgView.size = CGSize(width: 22, height: 22)
+        colorBgView.layer.cornerRadius = 11
+        colorBgView.layer.masksToBounds = true
+        contentView.addSubview(colorBgView)
+
+        colorView = UIView()
+        colorView.size = CGSize(width: 16, height: 16)
+        colorView.layer.cornerRadius = 8
+        colorView.layer.masksToBounds = true
+        contentView.addSubview(colorView)
     }
 
     required init?(coder: NSCoder) {
@@ -1105,19 +1112,31 @@ class MainImagePickerCell: UICollectionViewCell {
     }
 
     func setImage(_ image: UIImage) {
-        imageView.backgroundColor = image.averageColor ?? .gray
+        let color = image.averageColor ?? .gray
+
+        // 背景颜色处理（参考 SimpleColorCell）
+        if color.isWhite {
+            colorBgView.backgroundColor = "#dadada".color
+        } else {
+            colorBgView.backgroundColor = .white
+        }
+
+        // 设置实际颜色
+        colorView.backgroundColor = color
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        imageView.frame = bounds
+
+        colorBgView.center = CGPoint(x: width / 2, y: height / 2)
+        colorView.center = CGPoint(x: width / 2, y: height / 2)
     }
 
     override var isSelected: Bool {
         didSet {
             UIView.animate(withDuration: 0.2) {
-                self.imageView.transform = self.isSelected ? CGAffineTransform(scaleX: 1.15, y: 1.15) : .identity
-                self.imageView.layer.borderColor = self.isSelected ? UIColor.white.cgColor : UIColor.white.withAlphaComponent(0.5).cgColor
+                self.colorBgView.transform = self.isSelected ? .init(scaleX: 1.25, y: 1.25) : .identity
+                self.colorView.transform = self.isSelected ? .init(scaleX: 1.3, y: 1.3) : .identity
             }
         }
     }
