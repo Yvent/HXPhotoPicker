@@ -42,7 +42,7 @@ class EditorToolsView: UIView {
         for option in config.toolOptions {
             if contentType == .image {
                 switch option.type {
-                case .graffiti, .chartlet, .text, .cropSize, .filter, .filterEdit, .mosaic:
+                case .graffiti, .chartlet, .text, .cropSize, .filter, .filterEdit, .mosaic, .mainImage:
                     options.append(option)
                 default:
                     break

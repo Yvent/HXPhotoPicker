@@ -596,33 +596,36 @@ public extension EditorConfiguration {
             
             /// 编辑工具
             public enum `Type` {
-                
+
                 /// video - 播放、时长裁剪
                 case time
-                
+
                 /// 涂鸦
                 case graffiti
-                
+
                 /// 贴图
                 case chartlet
-                
+
                 /// 文本
                 case text
-                
+
                 /// photo - 马赛克
                 case mosaic
-                
+
                 /// 画面调整
                 case filterEdit
-                
+
                 /// 滤镜
                 case filter
-                
+
                 /// video - 配乐
                 case music
-                
+
                 /// 尺寸裁剪
                 case cropSize
+
+                /// 主图
+                case mainImage
             }
         }
         
@@ -663,7 +666,11 @@ public extension EditorConfiguration {
                 imageType: .imageResource.editor.tools.filter,
                 type: .filter
             )
-            return .init(toolOptions: [time, graffiti, chartlet, text, music, cropSize, mosaic, filterEdit, filter])
+            let mainImage = Options(
+                imageType: .imageResource.editor.tools.adjustment,
+                type: .mainImage
+            )
+            return .init(toolOptions: [time, graffiti, chartlet, text, music, cropSize, mosaic, filterEdit, filter, mainImage])
         }
     }
     

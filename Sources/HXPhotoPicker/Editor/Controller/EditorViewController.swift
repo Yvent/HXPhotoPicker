@@ -65,6 +65,7 @@ open class EditorViewController: HXBaseViewController {
     var mosaicToolView: EditorMosaicToolView!
     var musicView: EditorMusicView!
     var volumeView: EditorVolumeView!
+    var mainImageView: EditorMainImageView!
     var toolsView: EditorToolsView!
     var cancelButton: UIButton!
     var finishButton: UIButton!
@@ -212,7 +213,12 @@ open class EditorViewController: HXBaseViewController {
         volumeView = EditorVolumeView(config.video.music.tintColor)
         volumeView.hasMusic = false
         volumeView.delegate = self
-        
+
+        mainImageView = EditorMainImageView(config: config.brush)
+        mainImageView.delegate = self
+        mainImageView.alpha = 0
+        mainImageView.isHidden = true
+
         toolsView = EditorToolsView(config: config.toolsView, contentType: selectedAsset.type.contentType)
         toolsView.delegate = self
         
@@ -529,6 +535,7 @@ open class EditorViewController: HXBaseViewController {
             }
         }
         view.addSubview(mosaicToolView)
+        view.addSubview(mainImageView)
         if !config.isFixedCropSizeState {
             view.addSubview(toolsView)
         }
@@ -1026,6 +1033,7 @@ open class EditorViewController: HXBaseViewController {
         filtersView.frame = .init(x: 0, y: toolsView.y - 120, width: view.width, height: 120)
         brushColorView.frame = .init(x: 0, y: toolsView.y - 65, width: view.width, height: 65)
         brushSizeView.x = view.width - 45 - UIDevice.rightMargin
+        mainImageView.frame = CGRect(x: 0, y: toolsView.y - 100, width: view.width, height: 100)
         if UIDevice.isPad {
             mosaicToolView.frame =  .init(x: 0, y: toolsView.y - 65, width: 300, height: 65)
             mosaicToolView.centerX = view.width / 2
@@ -1160,6 +1168,7 @@ open class EditorViewController: HXBaseViewController {
         filtersView.frame = .init(x: toolsView.x - 120, y: toolsView.y, width: 120, height: toolsView.height)
         brushColorView.frame = .init(x: toolsView.x - 65, y: 0, width: 65, height: view.height)
         brushSizeView.x = UIDevice.leftMargin + 12
+        mainImageView.frame = CGRect(x: toolsView.x - 100, y: 0, width: 100, height: view.height)
         mosaicToolView.frame =  .init(x: toolsView.x - 65, y: 0, width: 65, height: view.height)
         if orientationDidChange || firstAppear {
             videoControlView.frame = .init(

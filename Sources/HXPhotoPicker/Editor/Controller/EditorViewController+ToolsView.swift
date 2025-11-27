@@ -79,6 +79,8 @@ extension EditorViewController: EditorToolsViewDelegate {
             showVideoControlView()
         case .filterEdit:
             showFilterEditView()
+        case .mainImage:
+            showMainImageView()
         default:
             break
         }
@@ -102,6 +104,8 @@ extension EditorViewController: EditorToolsViewDelegate {
             hideFiltersView()
         case .filterEdit:
             hideFilterEditView()
+        case .mainImage:
+            hideMainImageView()
         default:
             break
         }
@@ -144,12 +148,14 @@ extension EditorViewController: EditorToolsViewDelegate {
                 showFiltersView()
             case .filterEdit:
                 showFilterEditView()
+            case .mainImage:
+                showMainImageView()
             default:
                 break
             }
         }
     }
-    
+
     func hideToolsView(isCanvasGraffiti: Bool = false) {
         if toolsView.isHidden || toolsView.alpha == 0 {
             return
@@ -166,6 +172,8 @@ extension EditorViewController: EditorToolsViewDelegate {
                 hideFiltersView()
             case .filterEdit:
                 hideFilterEditView()
+            case .mainImage:
+                hideMainImageView()
             default:
                 break
             }
@@ -218,6 +226,8 @@ extension EditorViewController: EditorToolsViewDelegate {
                 hideFiltersView()
             case .filterEdit:
                 hideFilterEditView()
+            case .mainImage:
+                hideMainImageView()
             default:
                 break
             }
@@ -237,6 +247,8 @@ extension EditorViewController: EditorToolsViewDelegate {
                 showFiltersView()
             case .filterEdit:
                 showFilterEditView()
+            case .mainImage:
+                showMainImageView()
             default:
                 break
             }
@@ -760,6 +772,29 @@ extension EditorViewController: EditorToolsViewDelegate {
         nav.modalPresentationStyle = config.text.modalPresentationStyle
         present(nav, animated: true, completion: nil)
     }
+
+    func showMainImageView() {
+        if !mainImageView.isHidden && mainImageView.alpha == 1 {
+            return
+        }
+        mainImageView.isHidden = false
+        UIView.animate(withDuration: 0.2) {
+            self.mainImageView.alpha = 1
+        }
+    }
+
+    func hideMainImageView() {
+        if mainImageView.isHidden || mainImageView.alpha == 0 {
+            return
+        }
+        UIView.animate(withDuration: 0.2) {
+            self.mainImageView.alpha = 0
+        } completion: {
+            if $0 {
+                self.mainImageView.isHidden = true
+            }
+        }
+    }
 }
 
 extension EditorViewController: EditorMaskListDelete {
@@ -781,5 +816,264 @@ extension EditorViewController: EditorMaskListDelete {
             }
         }
         resetButton.isEnabled = isReset
+    }
+}
+
+protocol EditorMainImageViewDelegate: AnyObject {
+    func mainImageView(
+        _ view: EditorMainImageView,
+        didSelectColor color: UIColor
+    )
+}
+
+protocol EditorMainImageColorPickerViewDelegate: AnyObject {
+    func mainImageColorPickerView(
+        _ colorView: EditorMainImageColorPickerView,
+        changedColor color: UIColor
+    )
+}
+
+// MARK: - EditorMainImageColorPickerView
+
+class EditorMainImageColorPickerView: UIView {
+    weak var delegate: EditorMainImageColorPickerViewDelegate?
+    let config: EditorConfiguration.Brush
+    let brushColors: [String]
+
+    private var collectionView: UICollectionView!
+
+    init(config: EditorConfiguration.Brush) {
+        self.config = config
+        self.brushColors = config.colors
+        super.init(frame: .zero)
+        initViews()
+    }
+
+    private func initViews() {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumInteritemSpacing = 0
+        layout.itemSize = CGSize(width: 50, height: 50)
+        layout.sectionInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.backgroundColor = .clear
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.register(SimpleColorCell.self, forCellWithReuseIdentifier: "SimpleColorCell")
+        addSubview(collectionView)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        collectionView.frame = bounds
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        var count = brushColors.count
+        if config.addCustomColor {
+            count += 1
+        }
+        return count
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        cellForItemAt indexPath: IndexPath
+    ) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: "SimpleColorCell",
+            for: indexPath
+        ) as! SimpleColorCell
+        let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
+        if isCustomColor {
+            cell.setAsCustomColor()
+        } else {
+            let hexColor = brushColors[indexPath.item]
+            cell.setColor(hexColor.color)
+        }
+        return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
+        if isCustomColor {
+            if #available(iOS 14.0, *) {
+                let pickerVC = UIColorPickerViewController()
+                pickerVC.delegate = self
+                if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                    window.windows.first?.rootViewController?.present(pickerVC, animated: true)
+                }
+            }
+        } else {
+            let hexColor = brushColors[indexPath.item]
+            delegate?.mainImageColorPickerView(self, changedColor: hexColor.color)
+        }
+    }
+}
+
+@available(iOS 14.0, *)
+extension EditorMainImageColorPickerView: UIColorPickerViewControllerDelegate {
+    func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
+        let color = viewController.selectedColor
+        delegate?.mainImageColorPickerView(self, changedColor: color)
+        viewController.dismiss(animated: true)
+    }
+}
+
+// MARK: - SimpleColorCell
+
+class SimpleColorCell: UICollectionViewCell {
+    private var colorView: UIView!
+    private var icon: UIImageView!
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        colorView = UIView()
+        colorView.layer.cornerRadius = 22
+        colorView.layer.masksToBounds = true
+        contentView.addSubview(colorView)
+
+        icon = UIImageView()
+        icon.tintColor = .white
+        contentView.addSubview(icon)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setColor(_ color: UIColor) {
+        colorView.backgroundColor = color
+        icon.image = nil
+    }
+
+    func setAsCustomColor() {
+        colorView.backgroundColor = .clear
+        colorView.layer.borderWidth = 2
+        colorView.layer.borderColor = UIColor.white.cgColor
+        if #available(iOS 13.0, *) {
+            icon.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))
+        } else {
+            // Fallback on earlier versions
+        }
+        icon.tintColor = .white
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        colorView.frame = CGRect(x: (width - 44) / 2, y: (height - 44) / 2, width: 44, height: 44)
+        icon.frame = colorView.bounds
+    }
+
+    override var isSelected: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.2) {
+                self.colorView.transform = self.isSelected ? CGAffineTransform(scaleX: 1.2, y: 1.2) : .identity
+            }
+        }
+    }
+}
+
+// MARK: - EditorMainImageView
+
+class EditorMainImageView: UIView {
+    weak var delegate: EditorMainImageViewDelegate?
+    let config: EditorConfiguration.Brush
+
+    private var colorPickerView: EditorMainImageColorPickerView!
+    private var titleLabel: UILabel!
+
+    init(config: EditorConfiguration.Brush) {
+        self.config = config
+        super.init(frame: .zero)
+        initViews()
+    }
+
+    private func initViews() {
+        backgroundColor = UIColor(white: 0, alpha: 0.5)
+
+        // Title Label
+        titleLabel = UILabel()
+        titleLabel.text = "选择颜色"
+        titleLabel.textColor = .white
+        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        titleLabel.textAlignment = .center
+        addSubview(titleLabel)
+
+        // Color Picker View
+        colorPickerView = EditorMainImageColorPickerView(config: config)
+        colorPickerView.delegate = self
+        addSubview(colorPickerView)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let titleHeight: CGFloat = 40
+        titleLabel.frame = CGRect(x: 0, y: 0, width: width, height: titleHeight)
+
+        let colorPickerHeight: CGFloat = 60
+        colorPickerView.frame = CGRect(
+            x: 0,
+            y: titleHeight,
+            width: width,
+            height: colorPickerHeight
+        )
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+extension EditorMainImageView: EditorMainImageColorPickerViewDelegate {
+    func mainImageColorPickerView(
+        _ colorView: EditorMainImageColorPickerView,
+        changedColor color: UIColor
+    ) {
+        delegate?.mainImageView(self, didSelectColor: color)
+    }
+}
+
+// MARK: - EditorViewController Extension
+
+extension EditorViewController: EditorMainImageViewDelegate {
+    func mainImageView(
+        _ view: EditorMainImageView,
+        didSelectColor color: UIColor
+    ) {
+        applyMainImageColor(color)
+    }
+}
+
+extension EditorViewController {
+    func applyMainImageColor(_ color: UIColor) {
+        // 创建一个纯色图片，尺寸为当前编辑图片的尺寸
+        if let currentImage = editorView.image {
+            let size = currentImage.size
+            let rect = CGRect(origin: .zero, size: size)
+
+            // 开始图形上下文
+            UIGraphicsBeginImageContextWithOptions(size, false, currentImage.scale)
+            color.setFill()
+            UIRectFill(rect)
+
+            // 获取新生成的纯色图片
+            let colorImage = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+
+            // 更新编辑器中的图片
+            if let colorImage = colorImage {
+                editorView.updateImage(colorImage)
+            }
+        }
     }
 }
