@@ -843,6 +843,13 @@ class EditorMainImageColorPickerView: UIView {
     private var collectionView: UICollectionView!
     private var customColor: PhotoEditorBrushCustomColor = .init(color: .white)
 
+    var isShowCustomColor: Bool {
+        if #available(iOS 14.0, *), brushColors.count > 1 {
+            return true
+        }
+        return false
+    }
+
     init(config: EditorConfiguration.Brush) {
         self.config = config
         self.brushColors = config.colors
@@ -879,7 +886,7 @@ class EditorMainImageColorPickerView: UIView {
 extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         var count = brushColors.count
-        if config.addCustomColor {
+        if isShowCustomColor {
             count += 1
         }
         return count
@@ -893,7 +900,7 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
             withReuseIdentifier: "SimpleColorCell",
             for: indexPath
         ) as! SimpleColorCell
-        let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
+        let isCustomColor = isShowCustomColor && indexPath.item == brushColors.count
         if isCustomColor {
             cell.customColor = customColor
         } else {
@@ -903,7 +910,7 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
+        let isCustomColor = isShowCustomColor && indexPath.item == brushColors.count
         if isCustomColor {
             if #available(iOS 14.0, *) {
                 if !customColor.isFirst && !customColor.isSelected {
@@ -936,7 +943,7 @@ extension EditorMainImageColorPickerView: UIColorPickerViewControllerDelegate {
         customColor.isSelected = true
 
         if let index = (0..<collectionView.numberOfItems(inSection: 0)).first(where: {
-            config.addCustomColor && $0 == brushColors.count
+            isShowCustomColor && $0 == brushColors.count
         }) {
             collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
         }
