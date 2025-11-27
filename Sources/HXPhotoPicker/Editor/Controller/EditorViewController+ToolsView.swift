@@ -910,28 +910,38 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let isCustomColor = isShowCustomColor && indexPath.item == brushColors.count
-        if isCustomColor {
+        // 参考文本贴纸的实现方式
+        let colorHex: String?
+        let color: UIColor
+
+        if isShowCustomColor, indexPath.item == brushColors.count {
+            // 这是自定义颜色项
+            colorHex = nil
+            color = customColor.color
+
             if #available(iOS 14.0, *) {
                 if !customColor.isFirst && !customColor.isSelected {
+                    // 非首次但未选择，直接应用
                     customColor.isSelected = true
-                    collectionView.reloadItems(at: [indexPath])
-                    delegate?.mainImageColorPickerView(self, changedColor: customColor.color)
                 } else {
-                    let pickerVC = UIColorPickerViewController()
-                    pickerVC.delegate = self
-                    pickerVC.selectedColor = customColor.color
+                    // 首次或已选择，打开颜色选择器
+                    let vc = UIColorPickerViewController()
+                    vc.delegate = self
+                    vc.selectedColor = customColor.color
                     if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                        window.windows.first?.rootViewController?.present(pickerVC, animated: true)
+                        window.windows.first?.rootViewController?.present(vc, animated: true, completion: nil)
                     }
                     customColor.isFirst = false
                     customColor.isSelected = true
                 }
             }
         } else {
-            let hexColor = brushColors[indexPath.item]
-            delegate?.mainImageColorPickerView(self, changedColor: hexColor.color)
+            // 这是预设颜色项
+            colorHex = brushColors[indexPath.item]
+            color = colorHex?.color ?? .white
         }
+
+        delegate?.mainImageColorPickerView(self, changedColor: color)
     }
 }
 
