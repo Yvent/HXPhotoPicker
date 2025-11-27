@@ -399,7 +399,7 @@ extension UIImage {
             }
             return CGImagePropertyOrientation(rawValue: orientation) ?? .up
         }()
-        
+
         var decodingOptions: [AnyHashable: Any] = [
             kCGImageSourceShouldCacheImmediately: false
         ]
@@ -409,11 +409,59 @@ extension UIImage {
         guard let imageRef = CGImageSourceCreateImageAtIndex(sourceRef, 0, decodingOptions as CFDictionary) else {
             return nil
         }
-        
+
         let image = UIImage(cgImage: imageRef, scale: 1.0, orientation: exifOrientation.imageOrientation)
         return image
     }
-    
+
+    static func imageFromColor(_ color: UIColor, size: CGSize) -> UIImage? {
+        let rect = CGRect(origin: .zero, size: size)
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = false
+        format.scale = UIScreen._scale
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let image = renderer.image { context in
+            color.setFill()
+            UIRectFill(rect)
+        }
+        return image
+    }
+
+    var averageColor: UIColor? {
+        guard let cgImage = cgImage else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
+        guard let pixelData = cgImage.dataProvider?.data as? NSData else { return nil }
+        let data: UnsafePointer<UInt8> = pixelData.bytes.assumingMemoryBound(to: UInt8.self)
+
+        var red = 0
+        var green = 0
+        var blue = 0
+        var alpha = 0
+        let bytesPerPixel = 4
+
+        for y in 0..<height {
+            for x in 0..<width {
+                let pixelInfo = (width * y + x) * bytesPerPixel
+
+                if pixelInfo + 3 < pixelData.length {
+                    red += Int(data[pixelInfo])
+                    green += Int(data[pixelInfo + 1])
+                    blue += Int(data[pixelInfo + 2])
+                    alpha += Int(data[pixelInfo + 3])
+                }
+            }
+        }
+
+        let pixelCount = width * height
+        let averageRed = CGFloat(red / pixelCount) / 255.0
+        let averageGreen = CGFloat(green / pixelCount) / 255.0
+        let averageBlue = CGFloat(blue / pixelCount) / 255.0
+        let averageAlpha = CGFloat(alpha / pixelCount) / 255.0
+
+        return UIColor(red: averageRed, green: averageGreen, blue: averageBlue, alpha: averageAlpha)
+    }
+
 }
 
 extension CGImagePropertyOrientation {

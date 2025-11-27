@@ -928,6 +928,167 @@ extension EditorMainImageColorPickerView: UIColorPickerViewControllerDelegate {
     }
 }
 
+// MARK: - EditorMainImagePickerViewDelegate
+
+protocol EditorMainImagePickerViewDelegate: AnyObject {
+    func mainImagePickerView(
+        _ pickerView: EditorMainImagePickerView,
+        didSelectImage image: UIImage
+    )
+    func mainImagePickerViewDidTapPhotoButton(
+        _ pickerView: EditorMainImagePickerView
+    )
+}
+
+// MARK: - EditorMainImagePickerView
+
+class EditorMainImagePickerView: UIView {
+    weak var delegate: EditorMainImagePickerViewDelegate?
+
+    private var collectionView: UICollectionView!
+    private var photoButton: UIButton!
+
+    // Default images (red, green, blue)
+    private var defaultImages: [UIImage] = []
+
+    init() {
+        super.init(frame: .zero)
+        initViews()
+        generateDefaultImages()
+    }
+
+    private func generateDefaultImages() {
+        // Red image
+        if let redImage = UIImage.imageFromColor(UIColor.red, size: CGSize(width: 100, height: 100)) {
+            defaultImages.append(redImage)
+        }
+
+        // Green image
+        if let greenImage = UIImage.imageFromColor(UIColor.green, size: CGSize(width: 100, height: 100)) {
+            defaultImages.append(greenImage)
+        }
+
+        // Blue image
+        if let blueImage = UIImage.imageFromColor(UIColor.blue, size: CGSize(width: 100, height: 100)) {
+            defaultImages.append(blueImage)
+        }
+    }
+
+    private func initViews() {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumInteritemSpacing = 10
+        layout.itemSize = CGSize(width: 80, height: 80)
+        layout.sectionInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.backgroundColor = .clear
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.register(MainImagePickerCell.self, forCellWithReuseIdentifier: "MainImagePickerCell")
+        addSubview(collectionView)
+
+        photoButton = UIButton(type: .custom)
+        photoButton.setTitle("选择图片", for: .normal)
+        photoButton.setTitleColor(.white, for: .normal)
+        photoButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        photoButton.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        photoButton.layer.cornerRadius = 8
+        photoButton.addTarget(self, action: #selector(didPhotoButtonTapped), for: .touchUpInside)
+        addSubview(photoButton)
+    }
+
+    @objc private func didPhotoButtonTapped() {
+        delegate?.mainImagePickerViewDidTapPhotoButton(self)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let photoButtonWidth: CGFloat = 100
+        let photoButtonHeight: CGFloat = 50
+        photoButton.frame = CGRect(
+            x: width - photoButtonWidth - 12,
+            y: (height - photoButtonHeight) / 2,
+            width: photoButtonWidth,
+            height: photoButtonHeight
+        )
+
+        let collectionViewWidth = width - photoButtonWidth - 24
+        collectionView.frame = CGRect(
+            x: 0,
+            y: 0,
+            width: collectionViewWidth,
+            height: height
+        )
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+extension EditorMainImagePickerView: UICollectionViewDataSource, UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return defaultImages.count
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        cellForItemAt indexPath: IndexPath
+    ) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: "MainImagePickerCell",
+            for: indexPath
+        ) as! MainImagePickerCell
+        cell.setImage(defaultImages[indexPath.item])
+        return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        delegate?.mainImagePickerView(self, didSelectImage: defaultImages[indexPath.item])
+    }
+}
+
+// MARK: - MainImagePickerCell
+
+class MainImagePickerCell: UICollectionViewCell {
+    private var imageView: UIView!
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        imageView = UIView()
+        imageView.layer.cornerRadius = 8
+        imageView.layer.masksToBounds = true
+        imageView.layer.borderWidth = 2
+        imageView.layer.borderColor = UIColor.white.cgColor
+        contentView.addSubview(imageView)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func setImage(_ image: UIImage) {
+        imageView.backgroundColor = image.averageColor ?? .gray
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        imageView.frame = bounds
+    }
+
+    override var isSelected: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.2) {
+                self.imageView.transform = self.isSelected ? CGAffineTransform(scaleX: 1.15, y: 1.15) : .identity
+                self.imageView.layer.borderColor = self.isSelected ? UIColor.white.cgColor : UIColor.white.withAlphaComponent(0.5).cgColor
+            }
+        }
+    }
+}
+
 // MARK: - SimpleColorCell
 
 class SimpleColorCell: UICollectionViewCell {
@@ -988,7 +1149,9 @@ class EditorMainImageView: UIView {
     weak var delegate: EditorMainImageViewDelegate?
     let config: EditorConfiguration.Brush
 
+    private var segmentedControl: UISegmentedControl!
     private var colorPickerView: EditorMainImageColorPickerView!
+    private var imagePickerView: EditorMainImagePickerView!
     private var titleLabel: UILabel!
 
     init(config: EditorConfiguration.Brush) {
@@ -999,6 +1162,13 @@ class EditorMainImageView: UIView {
 
     private func initViews() {
         backgroundColor = UIColor(white: 0, alpha: 0.5)
+
+        // Segmented Control
+        segmentedControl = UISegmentedControl(items: ["颜色", "图片"])
+        segmentedControl.selectedSegmentIndex = 0
+        segmentedControl.tintColor = .white
+        segmentedControl.addTarget(self, action: #selector(didSegmentedControlChanged(_:)), for: .valueChanged)
+        addSubview(segmentedControl)
 
         // Title Label
         titleLabel = UILabel()
@@ -1012,20 +1182,60 @@ class EditorMainImageView: UIView {
         colorPickerView = EditorMainImageColorPickerView(config: config)
         colorPickerView.delegate = self
         addSubview(colorPickerView)
+
+        // Image Picker View
+        imagePickerView = EditorMainImagePickerView()
+        imagePickerView.delegate = self
+        imagePickerView.isHidden = true
+        addSubview(imagePickerView)
+    }
+
+    @objc private func didSegmentedControlChanged(_ control: UISegmentedControl) {
+        let isColorMode = control.selectedSegmentIndex == 0
+
+        UIView.animate(withDuration: 0.2) {
+            self.titleLabel.text = isColorMode ? "选择颜色" : "选择图片"
+            self.colorPickerView.alpha = isColorMode ? 1 : 0
+            self.imagePickerView.alpha = isColorMode ? 0 : 1
+        } completion: { _ in
+            self.colorPickerView.isHidden = !isColorMode
+            self.imagePickerView.isHidden = isColorMode
+        }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
 
-        let titleHeight: CGFloat = 40
-        titleLabel.frame = CGRect(x: 0, y: 0, width: width, height: titleHeight)
+        let segmentHeight: CGFloat = 35
+        let topPadding: CGFloat = 10
+        segmentedControl.frame = CGRect(
+            x: 16,
+            y: topPadding,
+            width: width - 32,
+            height: segmentHeight
+        )
 
-        let colorPickerHeight: CGFloat = 60
+        let titleHeight: CGFloat = 30
+        titleLabel.frame = CGRect(
+            x: 0,
+            y: segmentedControl.frame.maxY + 5,
+            width: width,
+            height: titleHeight
+        )
+
+        let contentHeight: CGFloat = 70
         colorPickerView.frame = CGRect(
             x: 0,
-            y: titleHeight,
+            y: titleLabel.frame.maxY,
             width: width,
-            height: colorPickerHeight
+            height: contentHeight
+        )
+
+        imagePickerView.frame = CGRect(
+            x: 0,
+            y: titleLabel.frame.maxY,
+            width: width,
+            height: contentHeight
         )
     }
 
@@ -1040,6 +1250,48 @@ extension EditorMainImageView: EditorMainImageColorPickerViewDelegate {
         changedColor color: UIColor
     ) {
         delegate?.mainImageView(self, didSelectColor: color)
+    }
+}
+
+extension EditorMainImageView: EditorMainImagePickerViewDelegate {
+    func mainImagePickerView(
+        _ pickerView: EditorMainImagePickerView,
+        didSelectImage image: UIImage
+    ) {
+        delegate?.mainImageView(self, didSelectColor: UIColor(patternImage: image))
+    }
+
+    func mainImagePickerViewDidTapPhotoButton(
+        _ pickerView: EditorMainImagePickerView
+    ) {
+        // This will be handled by the EditorViewController
+        if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            if let viewController = window.windows.first?.rootViewController {
+                let imagePicker = UIImagePickerController()
+                imagePicker.sourceType = .photoLibrary
+                imagePicker.delegate = self
+                viewController.present(imagePicker, animated: true)
+            }
+        }
+    }
+}
+
+extension EditorMainImageView: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    func imagePickerController(
+        _ picker: UIImagePickerController,
+        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+    ) {
+        defer {
+            picker.dismiss(animated: true)
+        }
+
+        if let selectedImage = info[.originalImage] as? UIImage {
+            delegate?.mainImageView(self, didSelectColor: UIColor(patternImage: selectedImage))
+        }
+    }
+
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
     }
 }
 
