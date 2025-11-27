@@ -841,6 +841,7 @@ class EditorMainImageColorPickerView: UIView {
     let brushColors: [String]
 
     private var collectionView: UICollectionView!
+    private var customColor: PhotoEditorBrushCustomColor = .init(color: .white)
 
     init(config: EditorConfiguration.Brush) {
         self.config = config
@@ -894,7 +895,11 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
         ) as! SimpleColorCell
         let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
         if isCustomColor {
-            cell.setAsCustomColor()
+            if customColor.isSelected {
+                cell.setColor(customColor.color)
+            } else {
+                cell.setAsCustomColor()
+            }
         } else {
             let hexColor = brushColors[indexPath.item]
             cell.setColor(hexColor.color)
@@ -906,10 +911,19 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
         let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
         if isCustomColor {
             if #available(iOS 14.0, *) {
-                let pickerVC = UIColorPickerViewController()
-                pickerVC.delegate = self
-                if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                    window.windows.first?.rootViewController?.present(pickerVC, animated: true)
+                if !customColor.isFirst && !customColor.isSelected {
+                    customColor.isSelected = true
+                    collectionView.reloadItems(at: [indexPath])
+                    delegate?.mainImageColorPickerView(self, changedColor: customColor.color)
+                } else {
+                    let pickerVC = UIColorPickerViewController()
+                    pickerVC.delegate = self
+                    pickerVC.selectedColor = customColor.color
+                    if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                        window.windows.first?.rootViewController?.present(pickerVC, animated: true)
+                    }
+                    customColor.isFirst = false
+                    customColor.isSelected = true
                 }
             }
         } else {
@@ -923,8 +937,16 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
 extension EditorMainImageColorPickerView: UIColorPickerViewControllerDelegate {
     func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
         let color = viewController.selectedColor
+        customColor.color = color
+        customColor.isSelected = true
+
+        if let index = (0..<collectionView.numberOfItems(inSection: 0)).first(where: {
+            config.addCustomColor && $0 == brushColors.count
+        }) {
+            collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        }
+
         delegate?.mainImageColorPickerView(self, changedColor: color)
-        viewController.dismiss(animated: true)
     }
 }
 
