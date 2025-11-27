@@ -895,14 +895,9 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
         ) as! SimpleColorCell
         let isCustomColor = config.addCustomColor && indexPath.item == brushColors.count
         if isCustomColor {
-            if customColor.isSelected {
-                cell.setColor(customColor.color)
-            } else {
-                cell.setAsCustomColor()
-            }
+            cell.customColor = customColor
         } else {
-            let hexColor = brushColors[indexPath.item]
-            cell.setColor(hexColor.color)
+            cell.colorHex = brushColors[indexPath.item]
         }
         return cell
     }
@@ -1111,57 +1106,99 @@ class MainImagePickerCell: UICollectionViewCell {
     }
 }
 
-// MARK: - SimpleColorCell
+// MARK: - SimpleColorCell (严格参考文本贴纸的 EditorStickerTextViewCell)
 
 class SimpleColorCell: UICollectionViewCell {
+    private var colorBgView: UIView!
+    private var imageView: UIImageView!
     private var colorView: UIView!
-    private var icon: UIImageView!
+
+    var colorHex: String! {
+        didSet {
+            imageView.isHidden = true
+            guard let colorHex = colorHex else { return }
+            let color = colorHex.color
+            if color.isWhite {
+                colorBgView.backgroundColor = "#dadada".color
+            } else {
+                colorBgView.backgroundColor = .white
+            }
+            colorView.backgroundColor = color
+        }
+    }
+
+    var customColor: PhotoEditorBrushCustomColor? {
+        didSet {
+            guard let customColor = customColor else {
+                return
+            }
+            imageView.isHidden = false
+            colorView.backgroundColor = customColor.color
+        }
+    }
+
+    override var isSelected: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.2) {
+                self.colorBgView.transform = self.isSelected ? .init(scaleX: 1.25, y: 1.25) : .identity
+                self.colorView.transform = self.isSelected ? .init(scaleX: 1.3, y: 1.3) : .identity
+            }
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        imageView = UIImageView(image: .imageResource.editor.text.customColor.image)
+        imageView.isHidden = true
+
+        let bgLayer = CAShapeLayer()
+        bgLayer.contentsScale = UIScreen._scale
+        bgLayer.frame = CGRect(x: 0, y: 0, width: 22, height: 22)
+        bgLayer.fillColor = UIColor.white.cgColor
+        let bgPath = UIBezierPath(
+            roundedRect: CGRect(x: 1.5, y: 1.5, width: 19, height: 19),
+            cornerRadius: 19 * 0.5
+        )
+        bgLayer.path = bgPath.cgPath
+        imageView.layer.addSublayer(bgLayer)
+
+        let maskLayer = CAShapeLayer()
+        maskLayer.contentsScale = UIScreen._scale
+        maskLayer.frame = CGRect(x: 0, y: 0, width: 22, height: 22)
+        let maskPath = UIBezierPath(rect: bgLayer.bounds)
+        maskPath.append(
+            UIBezierPath(
+                roundedRect: CGRect(x: 3, y: 3, width: 16, height: 16),
+                cornerRadius: 8
+            ).reversing()
+        )
+        maskLayer.path = maskPath.cgPath
+        imageView.layer.mask = maskLayer
+
+        colorBgView = UIView()
+        colorBgView.size = CGSize(width: 22, height: 22)
+        colorBgView.layer.cornerRadius = 11
+        colorBgView.layer.masksToBounds = true
+        colorBgView.addSubview(imageView)
+        contentView.addSubview(colorBgView)
+
         colorView = UIView()
-        colorView.layer.cornerRadius = 14
+        colorView.size = CGSize(width: 16, height: 16)
+        colorView.layer.cornerRadius = 8
         colorView.layer.masksToBounds = true
         contentView.addSubview(colorView)
-
-        icon = UIImageView()
-        icon.tintColor = .white
-        contentView.addSubview(icon)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func setColor(_ color: UIColor) {
-        colorView.backgroundColor = color
-        icon.image = nil
-    }
-
-    func setAsCustomColor() {
-        colorView.backgroundColor = .clear
-        colorView.layer.borderWidth = 1.5
-        colorView.layer.borderColor = UIColor.white.cgColor
-        if #available(iOS 13.0, *) {
-            icon.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold))
-        } else {
-            // Fallback on earlier versions
-        }
-        icon.tintColor = .white
-    }
-
     override func layoutSubviews() {
         super.layoutSubviews()
-        colorView.frame = CGRect(x: (width - 28) / 2, y: (height - 28) / 2, width: 28, height: 28)
-        icon.frame = colorView.bounds
-    }
 
-    override var isSelected: Bool {
-        didSet {
-            UIView.animate(withDuration: 0.2) {
-                self.colorView.transform = self.isSelected ? CGAffineTransform(scaleX: 1.25, y: 1.25) : .identity
-            }
-        }
+        colorBgView.center = CGPoint(x: width / 2, y: height / 2)
+        imageView.frame = colorBgView.bounds
+        colorView.center = CGPoint(x: width / 2, y: height / 2)
     }
 }
 
