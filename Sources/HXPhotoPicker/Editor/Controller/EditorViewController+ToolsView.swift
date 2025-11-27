@@ -861,14 +861,17 @@ class EditorMainImageColorPickerView: UIView {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
         layout.minimumInteritemSpacing = 8
-        layout.itemSize = CGSize(width: 36, height: 36)
+        layout.itemSize = CGSize(width: 50, height: 50)
         layout.sectionInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        layout.minimumLineSpacing = 0
 
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .clear
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.showsHorizontalScrollIndicator = false
+        collectionView.showsVerticalScrollIndicator = false
+        collectionView.scrollsToTop = false
         collectionView.register(SimpleColorCell.self, forCellWithReuseIdentifier: "SimpleColorCell")
         addSubview(collectionView)
     }
@@ -876,6 +879,21 @@ class EditorMainImageColorPickerView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         collectionView.frame = bounds
+        // 确保 collectionView 只显示一行
+        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            layout.minimumLineSpacing = 0
+            // 设置最大高度为单行高度 + padding
+            let maxHeight: CGFloat = 50
+            if bounds.height > maxHeight {
+                // 如果高度过大，调整 contentInset 使其居中
+                collectionView.contentInset = UIEdgeInsets(
+                    top: (bounds.height - maxHeight) / 2,
+                    left: 12,
+                    bottom: (bounds.height - maxHeight) / 2,
+                    right: 12
+                )
+            }
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -903,6 +921,11 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
         let isCustomColor = isShowCustomColor && indexPath.item == brushColors.count
         if isCustomColor {
             cell.customColor = customColor
+            // 如果自定义颜色被选中，设置 cell 为选中状态
+            if customColor.isSelected {
+                collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
+                cell.isSelected = true
+            }
         } else {
             cell.colorHex = brushColors[indexPath.item]
         }
@@ -920,25 +943,40 @@ extension EditorMainImageColorPickerView: UICollectionViewDataSource, UICollecti
             color = customColor.color
 
             if #available(iOS 14.0, *) {
-                if !customColor.isFirst && !customColor.isSelected {
-                    // 非首次但未选择，直接应用
-                    customColor.isSelected = true
-                } else {
-                    // 首次或已选择，打开颜色选择器
-                    let vc = UIColorPickerViewController()
-                    vc.delegate = self
-                    vc.selectedColor = customColor.color
-                    if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                        window.windows.first?.rootViewController?.present(vc, animated: true, completion: nil)
+                // 打开颜色选择器
+                let vc = UIColorPickerViewController()
+                vc.delegate = self
+                vc.selectedColor = customColor.color
+
+                // 找到当前的视图控制器
+                var currentViewController: UIViewController?
+                if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                    currentViewController = window.windows.first?.rootViewController
+
+                    // 获取当前显示的视图控制器
+                    while let presentedVC = currentViewController?.presentedViewController {
+                        currentViewController = presentedVC
                     }
+                }
+
+                if let viewController = currentViewController {
+                    viewController.present(vc, animated: true, completion: nil)
                     customColor.isFirst = false
                     customColor.isSelected = true
+                    // 刷新自定义颜色项的UI，保持选中状态
+                    collectionView.reloadItems(at: [indexPath])
                 }
             }
         } else {
             // 这是预设颜色项
             colorHex = brushColors[indexPath.item]
             color = colorHex?.color ?? .white
+            // 取消其他项的选中状态
+            if let previousIndexPaths = collectionView.indexPathsForSelectedItems, previousIndexPaths.count > 0 {
+                for indexPath in previousIndexPaths {
+                    collectionView.deselectItem(at: indexPath, animated: true)
+                }
+            }
         }
 
         delegate?.mainImageColorPickerView(self, changedColor: color)
@@ -982,16 +1020,16 @@ class EditorMainImagePickerView: UIView {
     private var collectionView: UICollectionView!
     private var photoButton: UIButton!
 
-    // Default images (red, green, blue)
-    private var defaultImages: [UIImage] = []
+    private var images: [UIImage] = []
 
-    init() {
+    init(images: [UIImage] = []) {
         super.init(frame: .zero)
+        self.images = images.isEmpty ? Self.defaultImages() : images
         initViews()
-        generateDefaultImages()
     }
 
-    private func generateDefaultImages() {
+    static func defaultImages() -> [UIImage] {
+        var defaultImages: [UIImage] = []
         // Red image
         if let redImage = UIImage.imageFromColor(UIColor.red, size: CGSize(width: 100, height: 100)) {
             defaultImages.append(redImage)
@@ -1006,13 +1044,14 @@ class EditorMainImagePickerView: UIView {
         if let blueImage = UIImage.imageFromColor(UIColor.blue, size: CGSize(width: 100, height: 100)) {
             defaultImages.append(blueImage)
         }
+        return defaultImages
     }
 
     private func initViews() {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
-        layout.minimumInteritemSpacing = 8
-        layout.itemSize = CGSize(width: 36, height: 36)
+        layout.minimumInteritemSpacing = 12
+        layout.itemSize = CGSize(width: 80, height: 80)
         layout.sectionInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
 
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -1020,6 +1059,7 @@ class EditorMainImagePickerView: UIView {
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.showsHorizontalScrollIndicator = false
+        collectionView.allowsSelection = true
         collectionView.register(MainImagePickerCell.self, forCellWithReuseIdentifier: "MainImagePickerCell")
         addSubview(collectionView)
 
@@ -1065,7 +1105,7 @@ class EditorMainImagePickerView: UIView {
 
 extension EditorMainImagePickerView: UICollectionViewDataSource, UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return defaultImages.count
+        return images.count
     }
 
     func collectionView(
@@ -1076,35 +1116,38 @@ extension EditorMainImagePickerView: UICollectionViewDataSource, UICollectionVie
             withReuseIdentifier: "MainImagePickerCell",
             for: indexPath
         ) as! MainImagePickerCell
-        cell.setImage(defaultImages[indexPath.item])
+        cell.setImage(images[indexPath.item])
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        delegate?.mainImagePickerView(self, didSelectImage: defaultImages[indexPath.item])
+        delegate?.mainImagePickerView(self, didSelectImage: images[indexPath.item])
     }
 }
 
-// MARK: - MainImagePickerCell (参考 SimpleColorCell 的风格)
+// MARK: - MainImagePickerCell
 
 class MainImagePickerCell: UICollectionViewCell {
-    private var colorBgView: UIView!
-    private var colorView: UIView!
+    private var imageView: UIImageView!
+    private var borderView: UIView!
 
     override init(frame: CGRect) {
         super.init(frame: frame)
 
-        colorBgView = UIView()
-        colorBgView.size = CGSize(width: 22, height: 22)
-        colorBgView.layer.cornerRadius = 11
-        colorBgView.layer.masksToBounds = true
-        contentView.addSubview(colorBgView)
+        imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFill
+        imageView.layer.cornerRadius = 8
+        imageView.layer.masksToBounds = true
+        contentView.addSubview(imageView)
 
-        colorView = UIView()
-        colorView.size = CGSize(width: 16, height: 16)
-        colorView.layer.cornerRadius = 8
-        colorView.layer.masksToBounds = true
-        contentView.addSubview(colorView)
+        borderView = UIView()
+        borderView.backgroundColor = .clear
+        borderView.layer.cornerRadius = 8
+        borderView.layer.masksToBounds = true
+        borderView.layer.borderWidth = 3
+        borderView.layer.borderColor = UIColor.white.cgColor
+        borderView.isHidden = true
+        contentView.addSubview(borderView)
     }
 
     required init?(coder: NSCoder) {
@@ -1112,31 +1155,20 @@ class MainImagePickerCell: UICollectionViewCell {
     }
 
     func setImage(_ image: UIImage) {
-        let color = image.averageColor ?? .gray
-
-        // 背景颜色处理（参考 SimpleColorCell）
-        if color.isWhite {
-            colorBgView.backgroundColor = "#dadada".color
-        } else {
-            colorBgView.backgroundColor = .white
-        }
-
-        // 设置实际颜色
-        colorView.backgroundColor = color
+        imageView.image = image
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-
-        colorBgView.center = CGPoint(x: width / 2, y: height / 2)
-        colorView.center = CGPoint(x: width / 2, y: height / 2)
+        imageView.frame = contentView.bounds
+        borderView.frame = contentView.bounds
     }
 
     override var isSelected: Bool {
         didSet {
             UIView.animate(withDuration: 0.2) {
-                self.colorBgView.transform = self.isSelected ? .init(scaleX: 1.25, y: 1.25) : .identity
-                self.colorView.transform = self.isSelected ? .init(scaleX: 1.3, y: 1.3) : .identity
+                self.borderView.isHidden = !self.isSelected
+                self.imageView.transform = self.isSelected ? .init(scaleX: 0.95, y: 0.95) : .identity
             }
         }
     }
@@ -1249,14 +1281,14 @@ class EditorMainImageView: UIView {
     private var imagePickerView: EditorMainImagePickerView!
     private var titleLabel: UILabel!
 
-    init(config: EditorConfiguration.Brush) {
+    init(config: EditorConfiguration.Brush, mainImages: [UIImage] = []) {
         self.config = config
         super.init(frame: .zero)
-        initViews()
+        initViews(with: mainImages)
     }
 
-    private func initViews() {
-        backgroundColor = UIColor(white: 0, alpha: 0.5)
+    private func initViews(with mainImages: [UIImage]) {
+        backgroundColor = UIColor(white: 0, alpha: 0.3)
 
         // Segmented Control
         segmentedControl = UISegmentedControl(items: ["颜色", "图片"])
@@ -1279,7 +1311,7 @@ class EditorMainImageView: UIView {
         addSubview(colorPickerView)
 
         // Image Picker View
-        imagePickerView = EditorMainImagePickerView()
+        imagePickerView = EditorMainImagePickerView(images: mainImages)
         imagePickerView.delegate = self
         imagePickerView.isHidden = true
         addSubview(imagePickerView)
@@ -1318,7 +1350,7 @@ class EditorMainImageView: UIView {
             height: titleHeight
         )
 
-        let contentHeight: CGFloat = 70
+        let contentHeight: CGFloat = 120
         colorPickerView.frame = CGRect(
             x: 0,
             y: titleLabel.frame.maxY,
@@ -1359,19 +1391,28 @@ extension EditorMainImageView: EditorMainImagePickerViewDelegate {
     func mainImagePickerViewDidTapPhotoButton(
         _ pickerView: EditorMainImagePickerView
     ) {
-        // This will be handled by the EditorViewController
+        // 找到当前的视图控制器
+        var currentViewController: UIViewController?
+
         if #available(iOS 13.0, *) {
             if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                if let viewController = window.windows.first?.rootViewController {
-                    let imagePicker = UIImagePickerController()
-                    imagePicker.sourceType = .photoLibrary
-                    imagePicker.delegate = self
-                    viewController.present(imagePicker, animated: true)
+                currentViewController = window.windows.first?.rootViewController
+
+                // 获取当前显示的视图控制器
+                while let presentedVC = currentViewController?.presentedViewController {
+                    currentViewController = presentedVC
                 }
             }
         } else {
-            // Fallback on earlier versions
+            currentViewController = UIApplication.shared.keyWindow?.rootViewController
         }
+
+        guard let viewController = currentViewController else { return }
+
+        let imagePicker = UIImagePickerController()
+        imagePicker.sourceType = .photoLibrary
+        imagePicker.delegate = self
+        viewController.present(imagePicker, animated: true)
     }
 }
 

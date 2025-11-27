@@ -222,43 +222,47 @@ public extension EditorConfiguration {
     }
     
     struct Brush {
-        
+
         /// array of brush colors
         /// 画笔颜色数组
         public var colors: [String] = PhotoTools.defaultColors()
-        
+
         /// default brush color index
         /// 默认画笔颜色索引
         public var defaultColorIndex: Int = 2
-        
+
         /// initial brush width
         /// 初始画笔宽度
         public var lineWidth: CGFloat = 5
-        
+
         /// Maximum brush width
         /// 画笔最大宽度
         public var maximumLinewidth: CGFloat = 20
-        
+
         /// Brush Min Width
         /// 画笔最小宽度
         public var minimumLinewidth: CGFloat = 2
-        
+
         /// Show brush size slider
         /// 显示画笔尺寸大小滑动条
         public var showSlider: Bool = true
-        
+
         /// Add custom colors - iOS 14+
         /// 添加自定义颜色 - iOS 14+
         public var addCustomColor: Bool = true
-        
+
         /// Customize Default Colors - iOS 14+
         /// 自定义默认颜色 - iOS 14+
         public var customDefaultColor: UIColor = "#9EB6DC".hx.color
-        
+
         /// Hide texture view while drawing
         /// 绘制时隐藏贴图视图
         public var isHideStickersDuringDrawing: Bool = true
-        
+
+        /// Main image picker images
+        /// 主图片选择器图片数组
+        public var mainImages: [UIImage] = []
+
         public init() { }
     }
     
