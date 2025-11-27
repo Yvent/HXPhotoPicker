@@ -1033,7 +1033,7 @@ open class EditorViewController: HXBaseViewController {
         filtersView.frame = .init(x: 0, y: toolsView.y - 120, width: view.width, height: 120)
         brushColorView.frame = .init(x: 0, y: toolsView.y - 65, width: view.width, height: 65)
         brushSizeView.x = view.width - 45 - UIDevice.rightMargin
-        mainImageView.frame = CGRect(x: 0, y: toolsView.y - 100, width: view.width, height: 100)
+        mainImageView.frame = CGRect(x: 0, y: toolsView.y - 145, width: view.width, height: 135)
         if UIDevice.isPad {
             mosaicToolView.frame =  .init(x: 0, y: toolsView.y - 65, width: 300, height: 65)
             mosaicToolView.centerX = view.width / 2
@@ -1168,7 +1168,7 @@ open class EditorViewController: HXBaseViewController {
         filtersView.frame = .init(x: toolsView.x - 120, y: toolsView.y, width: 120, height: toolsView.height)
         brushColorView.frame = .init(x: toolsView.x - 65, y: 0, width: 65, height: view.height)
         brushSizeView.x = UIDevice.leftMargin + 12
-        mainImageView.frame = CGRect(x: toolsView.x - 100, y: 0, width: 100, height: view.height)
+        mainImageView.frame = CGRect(x: toolsView.x - 145, y: 0, width: 135, height: view.height)
         mosaicToolView.frame =  .init(x: toolsView.x - 65, y: 0, width: 65, height: view.height)
         if orientationDidChange || firstAppear {
             videoControlView.frame = .init(
