@@ -852,8 +852,8 @@ class EditorMainImageColorPickerView: UIView {
     private func initViews() {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
-        layout.minimumInteritemSpacing = 0
-        layout.itemSize = CGSize(width: 50, height: 50)
+        layout.minimumInteritemSpacing = 8
+        layout.itemSize = CGSize(width: 36, height: 36)
         layout.sectionInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
 
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -1098,7 +1098,7 @@ class SimpleColorCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         colorView = UIView()
-        colorView.layer.cornerRadius = 22
+        colorView.layer.cornerRadius = 14
         colorView.layer.masksToBounds = true
         contentView.addSubview(colorView)
 
@@ -1118,10 +1118,10 @@ class SimpleColorCell: UICollectionViewCell {
 
     func setAsCustomColor() {
         colorView.backgroundColor = .clear
-        colorView.layer.borderWidth = 2
+        colorView.layer.borderWidth = 1.5
         colorView.layer.borderColor = UIColor.white.cgColor
         if #available(iOS 13.0, *) {
-            icon.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))
+            icon.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold))
         } else {
             // Fallback on earlier versions
         }
@@ -1130,14 +1130,14 @@ class SimpleColorCell: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        colorView.frame = CGRect(x: (width - 44) / 2, y: (height - 44) / 2, width: 44, height: 44)
+        colorView.frame = CGRect(x: (width - 28) / 2, y: (height - 28) / 2, width: 28, height: 28)
         icon.frame = colorView.bounds
     }
 
     override var isSelected: Bool {
         didSet {
             UIView.animate(withDuration: 0.2) {
-                self.colorView.transform = self.isSelected ? CGAffineTransform(scaleX: 1.2, y: 1.2) : .identity
+                self.colorView.transform = self.isSelected ? CGAffineTransform(scaleX: 1.25, y: 1.25) : .identity
             }
         }
     }
@@ -1265,13 +1265,17 @@ extension EditorMainImageView: EditorMainImagePickerViewDelegate {
         _ pickerView: EditorMainImagePickerView
     ) {
         // This will be handled by the EditorViewController
-        if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            if let viewController = window.windows.first?.rootViewController {
-                let imagePicker = UIImagePickerController()
-                imagePicker.sourceType = .photoLibrary
-                imagePicker.delegate = self
-                viewController.present(imagePicker, animated: true)
+        if #available(iOS 13.0, *) {
+            if let window = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                if let viewController = window.windows.first?.rootViewController {
+                    let imagePicker = UIImagePickerController()
+                    imagePicker.sourceType = .photoLibrary
+                    imagePicker.delegate = self
+                    viewController.present(imagePicker, animated: true)
+                }
             }
+        } else {
+            // Fallback on earlier versions
         }
     }
 }
